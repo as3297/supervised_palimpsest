@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/OneClassSVM.iml" filepath="$PROJECT_DIR$/.idea/OneClassSVM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../OneSVM_palimpsest/.idea/OneSVM_palimpsest.iml" filepath="$PROJECT_DIR$/../OneSVM_palimpsest/.idea/OneSVM_palimpsest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Supervised_palimpsest.iml" filepath="$PROJECT_DIR$/.idea/Supervised_palimpsest.iml" />
     </modules>
   </component>
 </project>
