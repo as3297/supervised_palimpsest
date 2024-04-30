@@ -1,9 +1,10 @@
 from read_msi_image import conver_pil_msi_ims_to_array
 from pil_image_cube import ThumbnailMSI_PIL
 import numpy as np
-from util import save_json, read_band_list
-from util import order_band_list
+from util import save_json, read_band_list, read_json, order_band_list
 import os
+from read_pixel_coord import points_coord_in_bbox
+import csv
 
 
 def create_band_list(cube_dir, txt_save_fpath):
@@ -64,8 +65,36 @@ def store_max_val(image_dir,band_list_path,fpath_save):
     save_json(fpath_save,max_vals)
     obj.close_all_images()
 
+
 def store_dataset_split():
+    def store_coord_in_dict(cd):
+        return {"x1":cd[0],"y1":cd[1],"x2":cd[2],"y2":cd[3]}
+    d = {}
+    d["test_bbox"] = store_coord_in_dict([60,1197, 4680, 2288])
+    d["train_bbox"] = store_coord_in_dict([60, 2288, 4680, 5857])
+    d["val_bbox"] = store_coord_in_dict([60, 5857, 4680, 6441])
+    save_json(r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\dataset_split.json",d)
 
+def calc_points_in_each_datasplit(class_name,class_mask_fpath):
+    d_bbox = read_json(r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\dataset_split.json")
+    csvfile = open(r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\nb_points_per_split_{}.csv".format(class_name),"w",newline='')
+    csvwriter = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
+    for split_name,bbox in d_bbox.items():
+        bbox = [bbox["x1"],bbox["y1"],bbox["x2"],bbox["y2"]]
+        _, _, nb_coords = points_coord_in_bbox(class_mask_fpath, bbox)
+        csvwriter.writerow([split_name.split("_")[0],nb_coords])
+    csvfile.close()
+
+def calc_points_in_each_class(d_classes):
+    """
+    Stores csv file with number of points for each datasplit in each class
+    :param d_classes: {class_name1:class_mask_fpath1,...}
+    :return: None
+    """
+    for class_name,fpath in d_classes.items():
+        calc_points_in_each_datasplit(class_name,fpath)
 if __name__ == "__main__":
+    pass
 

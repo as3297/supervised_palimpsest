@@ -71,6 +71,7 @@ def points_coord_in_bbox(fpath,bbox):
     """
     coords = ClassCoord(fpath, 0).coords
     ys, xs = map(list, zip(*coords))
+
     nb_coords = len(coords)
     idx_start = 0
     idx_end = 0
@@ -90,6 +91,7 @@ def points_coord_in_bbox(fpath,bbox):
         if ys[idx_y]<bbox[3]:
           idx_end = idx_y
           break
+    nb_coords = idx_end-idx_start
     return xs[idx_start:idx_end], ys[idx_start:idx_end], nb_coords
 
 
@@ -125,8 +127,6 @@ def test_points_coord_in_box():
     plt.figure("Restored mask")
     plt.imshow(restored_mask, cmap="gray")
     plt.show()
-
-
 
 
 if __name__=="__main__":
