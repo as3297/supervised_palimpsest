@@ -38,9 +38,13 @@ def read_max_vals(fpath_max_val,bands_list):
 
 def order_band_list(bands):
     ordered_bands = []
-    for band_idx in range(len(bands)):
+    list_of_band_idxs = []
+    for band in bands:
+        list_of_band_idxs.append(int(band[-4:-2]))
+
+    for band_idx in sorted(list_of_band_idxs):
         for band_name in bands:
-            print("Band name:{},idx:{}".format(band_name, band_name[-8:-6]))
+            print("Band name:{},idx:{}".format(band_name, band_name[-4:-2]))
             if int(band_name[-4:-2]) == band_idx:
                 ordered_bands.append(band_name + "\n")
                 break

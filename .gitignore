@@ -1,3 +1,5 @@
 documents/
 temp/
 .idea/
+src/__pycache__/
+

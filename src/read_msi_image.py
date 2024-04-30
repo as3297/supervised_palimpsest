@@ -1,4 +1,3 @@
-
 import numpy as np
 from pil_image_cube import ImageCubePILobject
 
@@ -23,6 +22,7 @@ class DataFromPILImageCube():
                                               pil_msi_obj.nb_bands)
         return msi_img
 
+
 class CoordsWindow():
     def __init__(self,pil_img_obj:ImageCubePILobject):
         """
@@ -38,7 +38,7 @@ class CoordsWindow():
 class BboxWindow(CoordsWindow):
     def __init__(self,bbox,pil_msi_obj):
         """
-        
+
         :param bbox:
         """
         super().__init__(pil_msi_obj)
@@ -129,15 +129,12 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
                 points[band_idx,point_idx] = pixel_val
         return points
 
-
 def strech_contrast(val,max_val):
     """Strech im by max value without oversaturated pixels
     max_val - int, bit depth"""
     val = np.clip(val,a_max=max_val,a_min=0.)
     val= val/max_val
     return val
-
-
 
 def conver_pil_msi_ims_to_array(pil_msi_img,width,height,nb_bands):
     """Convert PIL image cube into array image cube"""

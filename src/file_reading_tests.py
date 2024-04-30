@@ -1,13 +1,11 @@
-from read_files import PointsfromMSI_PIL, FragmentfromMSI_PIL, ImageCubePILobject
+from read_msi_image import PointsfromMSI_PIL, FragmentfromMSI_PIL, ImageCubePILobject
 from util import  read_band_list, read_max_vals
 from matplotlib import pyplot as plt
 import numpy as np
-
-
+from training import data_from_file
 
 def generate_coord_inside_bbox(x1,y1,width,height):
     points_coords = []
-
     for j in range(height):
         for i in range(width):
             points_coords.append([i+x1,j+y1])
@@ -18,7 +16,7 @@ def fragment_generation_test():
     image_dir = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated"
     band_list_path = r"C:\Data\PhD\palimpsest\Victor_data\band_list.txt"
     fpath_max_val = r"C:\Data\PhD\palimpsest\Victor_data\bands_max_val.json"
-    width, height =1000, 500
+    width, height = 1000, 500
     points_coord = generate_coord_inside_bbox(x1,y1,width,height)
     bands = read_band_list(band_list_path)
     max_vals = read_max_vals(fpath_max_val,bands)
@@ -28,9 +26,8 @@ def fragment_generation_test():
     frag_im = points_ob.points[band_idx].reshape([height,width])
     frag_obj = FragmentfromMSI_PIL(im_pil_ob,max_vals,[x1,y1,x1+width,y1+height])
     res = np.sum(frag_obj.ims_img[band_idx] - frag_im)
-    print(np.sum(res))
     if res>0:
-        raise ValueError("The difference between fragment and reconstracted fragment from ")
+        raise ValueError("Fragment and reconstracted fragment from points are not the same")
     plt.figure("Fragment")
     plt.imshow(frag_obj.ims_img[band_idx],cmap="gray")
 
@@ -39,4 +36,6 @@ def fragment_generation_test():
     plt.show()
 
 if __name__=="__main__":
-    fragment_generation_test()
+    im_path_ut = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\maks\msXL_315r_b-undertext_black.png"
+    im_path_notut = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\maks\msXL_315r_b-not_undertext.png"
+    data_from_file(im_path_ut,im_path_notut)
