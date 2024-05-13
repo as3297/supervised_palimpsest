@@ -4,12 +4,17 @@ from pil_image_cube import ImageCubePILobject
 
 class DataFromPILImageCube():
     """Factory for reading data from Pil MSI image"""
-    def __init__(self, pil_msi_obj, max_vals):
+    def __init__(self, pil_msi_obj:ImageCubePILobject, max_vals):
         self.pil_msi_obj = pil_msi_obj
         self.max_vals = max_vals
 
 
     def contrast_stretch(self,msi_img):
+        """
+
+        :param msi_img:
+        :return:
+        """
         for band_idx in range(self.pil_msi_obj.nb_bands):
             msi_img[band_idx] = strech_contrast(msi_img[band_idx],self.max_vals[band_idx])
         return msi_img
@@ -26,7 +31,7 @@ class DataFromPILImageCube():
 class CoordsWindow():
     def __init__(self,pil_img_obj:ImageCubePILobject):
         """
-        Factory for data window class parameters
+        Factory for data ROI class parameters
         """
         self.width = pil_img_obj.width
         self.height = pil_img_obj.height
@@ -38,7 +43,7 @@ class CoordsWindow():
 class BboxWindow(CoordsWindow):
     def __init__(self,bbox,pil_msi_obj):
         """
-
+        ROI class in shape of box
         :param bbox:
         """
         super().__init__(pil_msi_obj)
@@ -61,7 +66,7 @@ class BboxWindow(CoordsWindow):
 class PointsWindow(CoordsWindow):
     def __init__(self, pil_msi_obj: ImageCubePILobject, points_coord):
         """
-
+        ROI class as individual points
         :param bbox:
         """
         super().__init__(pil_msi_obj)
@@ -85,7 +90,7 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
 
 
 class FragmentfromMSI_PIL(DataFromPILImageCube):
-    def __init__(self,pil_msi_obj: list,max_vals: list,bbox):
+    def __init__(self,pil_msi_obj:ImageCubePILobject,max_vals: list,bbox):
         """
         Read points from image
         :param msi_img: list of PIL image objects of each band of MSI image
@@ -101,7 +106,7 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
 
 
 class PointsfromMSI_PIL(DataFromPILImageCube):
-    def __init__(self,pil_msi_obj: list,max_vals: list,points_coord):
+    def __init__(self,pil_msi_obj: ImageCubePILobject,max_vals: list,points_coord):
         """
         read points from image
         :param msi_img: list of PIL image objects of each band of MSI image
@@ -113,7 +118,8 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
         self.unstretch_ims_img = None
         self.unstretch_points = self.convert_pil_points_to_array(self.pil_msi_obj)
-        self.points = self.contrast_stretch(self.unstretch_points)
+        points = self.contrast_stretch(self.unstretch_points)
+        self.points = np.transpose(points,axes=[1,0])
 
     def convert_pil_points_to_array(self,pil_msi_obj):
         """
