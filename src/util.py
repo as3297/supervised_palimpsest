@@ -1,11 +1,26 @@
 import json
 import numpy as np
 
+
 def save_json(fpath,d):
+    """
+    Save json file
+    fpath - path to json file, should end with .json
+    d - dictionary to save
+    """
     # Write the dictionary to a JSON file
     with open(fpath, 'w') as json_file:
         json.dump(d, json_file, indent=4)
 
+def extend_json(fpath,d):
+    """
+    Save json file
+    fpath - path to json file, should end with .json
+    d - dictionary to save
+    """
+    # Write the dictionary to a JSON file
+    with open(fpath, 'a') as json_file:
+        json.dump(d, json_file, indent=4)
 def read_json(fpath):
     with open(fpath, 'r') as json_file:
         d = json.load(json_file)
@@ -49,3 +64,10 @@ def order_band_list(bands):
                 ordered_bands.append(band_name + "\n")
                 break
     return ordered_bands
+
+def generate_coord_inside_bbox(x1,y1,width,height):
+    points_coords = []
+    for j in range(height):
+        for i in range(width):
+            points_coords.append([i+x1,j+y1])
+    return points_coords

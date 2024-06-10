@@ -2,3 +2,4 @@ documents/
 temp/
 .idea/
 src/__pycache__/
+training/

@@ -129,10 +129,8 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         """
         points = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points])
         for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
-            for point_idx,coord in enumerate(self.points_coord):
-                x,y = coord
-                pixel_val = im_band.getpixel((x,y))
-                points[band_idx,point_idx] = pixel_val
+            points_per_band = list(map(im_band.getpixel,self.points_coord))
+            points[band_idx] = points_per_band
         return points
 
 def strech_contrast(val,max_val):

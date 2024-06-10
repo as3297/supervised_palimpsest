@@ -1,10 +1,12 @@
-from read_msi_image import conver_pil_msi_ims_to_array
+from read_msi_data_as_array import conver_pil_msi_ims_to_array
 from pil_image_cube import ThumbnailMSI_PIL
 import numpy as np
 from util import save_json, read_band_list, read_json, order_band_list
 import os
 from read_pixel_coord import points_coord_in_bbox
 import csv
+from PIL import Image
+from skimage import io,transform
 
 
 def create_band_list(cube_dir, txt_save_fpath):
@@ -95,6 +97,16 @@ def calc_points_in_each_class(d_classes):
     """
     for class_name,fpath in d_classes.items():
         calc_points_in_each_datasplit(class_name,fpath)
+
+def rotate_imgs(im_dir,save_dir):
+    for f in os.listdir(im_dir):
+        if ".tif" in f:
+            im = Image.open(os.path.join(im_dir,f))
+            rotation = Image.ROTATE_270
+            im = im.transpose(rotation)
+            im.save(os.path.join(save_dir,f))
+
+
 if __name__ == "__main__":
-    pass
+    rotate_imgs(r"c:\Data\PhD\palimpsest\Victor_data\msXL_319r_b",r"C:\Data\PhD\palimpsest\Victor_data\msXL_319r_b\rotated")
 
