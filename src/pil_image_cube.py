@@ -1,5 +1,6 @@
 from PIL import Image
 import os
+from read_pixel_coord import ClassCoord
 
 
 class ImageCubePILobject:
@@ -25,6 +26,9 @@ class ImageCubePILobject:
         self.pil_msi_img = self.read_msi_image_object()
         self.width, self.height = self.pil_msi_img[0].size
         self.nb_bands = len(self.band_list)
+        self.spectralon_mask_path = os.path.join(self.image_dir,"mask", self.folio_name + "-" + "spectralon.png")
+        s = ClassCoord(self.spectralon_mask_path,self.rotate_angle)
+        self.spectralon_coords = s.coords
 
 
     def read_image_object(self,path):
@@ -33,6 +37,7 @@ class ImageCubePILobject:
             rotation = eval("Image.ROTATE_{}".format(self.rotate_angle))
             im = im.transpose(rotation)
         return im
+
 
     def read_msi_image_object(self):
         """Creates a list of PIL objects that correspond to each band of the image"""

@@ -39,7 +39,7 @@ def load_data_for_training(model_path:str,modalities:list,debugging=False):
   Load features and labels from multiple folios
   """
   main_path = r"C:\Data\PhD\palimpsest\Victor_data"
-  folios = [r"msXL_315r_b"]
+  folios = [r"msXL_315r_b",r"msXL_319r_b"]
   band_list_path = osp(main_path,"band_list.txt")
   bands = read_band_list(band_list_path)
   bands = sublist_of_bands(bands,modalities)
@@ -48,9 +48,9 @@ def load_data_for_training(model_path:str,modalities:list,debugging=False):
   for idx,folio_name in enumerate(folios):
     bbox_fpath = osp(main_path,folio_name, "dataset_split.json")
     bbox_dict = read_json(bbox_fpath)
-    bbox_dicts.append(bbox_dict)
     if debugging:
       bbox_dict = debugging_dict
+    bbox_dicts.append(bbox_dict)
 
     if idx==0:
       dataset = load_data_for_training_from_folio(main_path,folio_name, bands, bbox_dict)
@@ -59,9 +59,9 @@ def load_data_for_training(model_path:str,modalities:list,debugging=False):
             main_path,
             folio_name, bands,
             bbox_dict)
-        for subset_idx,folio_subset in enumerate(folio_dataset):
-            dataset[subset_idx] = (np.concatenate([dataset[subset_idx][0],folio_subset[0]],axis=0),
-                                   np.concatenate([dataset[subset_idx][1],folio_subset[1]],axis=0))
+        for subset,subset_val in folio_dataset.items():
+            dataset[subset][0] = np.concatenate([dataset[subset][0],subset_val[0]],axis=0)
+            dataset[subset][1] = np.concatenate([dataset[subset][1],subset_val[1]],axis=0)
 
     save_data_parameters(model_path,modalities,bbox_dicts,folios)
     return dataset
@@ -88,7 +88,7 @@ def load_data_for_training_from_folio(main_path,folio_name,bands,bbox_dict):
   image_dir_path = osp(main_path,folio_name)
 
   ut_mask_path = osp(image_dir_path,"mask",folio_name+r"-undertext_black.png")
-  nonut_mask_path = osp(image_dir_path,"mask",folio_name+r"-not_undertext_more.png")
+  nonut_mask_path = osp(image_dir_path,"mask",folio_name+r"-not_undertext.png")
   im_msi_pil_ob = ImageCubePILobject(image_dir_path,folio_name,bands,0)
 
 
@@ -99,7 +99,7 @@ def load_data_for_training_from_folio(main_path,folio_name,bands,bbox_dict):
                                   ut_mask_path, nonut_mask_path, max_vals, "val")
 
 
-  return trainset_ut,trainset_nonut,valset_ut,valset_nonut
+  return {"train_ut":trainset_ut,"train_nonut":trainset_nonut,"val_ut":valset_ut,"val_nonut":valset_nonut}
 
 class PalGraph():
   def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,optimizer_name):
@@ -251,7 +251,7 @@ def training(restore_path = None,debugging=False):
   modalities = ["M"]
   nb_nodes_in_layer = 30
   nb_layers = 5
-  optimizer_name = "sgd"
+  optimizer_name = "adam"
   current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
   model_dir = os.path.join(r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", current_time)
 
@@ -319,4 +319,4 @@ def testing(saved_model_path):
   pass
 
 if __name__=="__main__":
-  training(None,False)
+  training(None,True)

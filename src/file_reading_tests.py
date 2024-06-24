@@ -7,8 +7,9 @@ from dataset import sublist_of_bands,read_features_labels,shuffle_dataset_split,
 from util import read_json
 from matplotlib import pyplot as plt
 from PIL import Image
-from read_pixel_coord import points_coord_in_bbox
+from read_pixel_coord import points_coord_in_bbox,ClassCoord
 from skimage import io
+
 
 
 class LabeledIm:
@@ -40,11 +41,13 @@ class LabeledIm:
         im = im / np.amax(im)
         return im
 def fragment_generation_test():
-    image_dir = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated"
+    folio_name = r"msXL_315r_b"
+    osp = os.path.join
+    image_dir = osp(r"C:\Data\PhD\palimpsest\Victor_data",folio_name)
     band_list_path = r"C:\Data\PhD\palimpsest\Victor_data\band_list.txt"
     fpath_max_val = r"C:\Data\PhD\palimpsest\Victor_data\bands_max_val.json"
-    folio_name = r"msXL_315r_b"
-    bbox_fpath = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\dataset_split.json"
+
+    bbox_fpath = osp(r"C:\Data\PhD\palimpsest\Victor_data",folio_name,"dataset_split.json")
     bbox_dict = read_json(bbox_fpath)
     bbox = read_bboxs("val", bbox_dict)
     height = bbox[3]-bbox[1]
@@ -52,10 +55,12 @@ def fragment_generation_test():
     x1, y1 = bbox[0],bbox[1]
     points_coord = generate_coord_inside_bbox(x1,y1,width,height)
     bands = read_band_list(band_list_path)
+    band_idx = 14
+    print("Band name {}".format(bands[band_idx]))
     max_vals = read_max_vals(fpath_max_val,bands)
     im_pil_ob = ImageCubePILobject(image_dir,folio_name,bands,0)
     points_ob = PointsfromMSI_PIL(im_pil_ob,max_vals,points_coord)
-    band_idx = 14
+
     frag_im = points_ob.points[:,band_idx].reshape([height,width])
     frag_obj = FragmentfromMSI_PIL(im_pil_ob,max_vals,[x1,y1,x1+width,y1+height])
     res = np.sum(frag_obj.ims_img[band_idx] - frag_im)
@@ -113,18 +118,28 @@ def test_load_data_points():
   
 
 def test_read_Class_coord():
-    fpath = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\maks\msXL_315r_b-undertext_black.png"
-    coords = ClassCoord(fpath,0).coords
+    fpath = r"C:\Data\PhD\palimpsest\Victor_data\msXL_319r_b\mask\msXL_319r_b-spectralon.png"
+    coords_reverse = ClassCoord(fpath,0).coords
+    coords = list(zip(list(zip(*coords_reverse))[1],list(zip(*coords_reverse))[0]))
+    with Image.open(fpath) as im_pil:
+        pixel_vals = list(map(im_pil.getpixel, coords_reverse))
     mask = LabeledIm(fpath,0).im
     restored_mask = np.ones_like(mask)
+    restored_pixel_val = np.ones_like(mask)
+
     rows, cols = map(list, zip(*coords))
     restored_mask[rows,cols]=0
+    restored_pixel_val[rows,cols] = pixel_vals
+
 
     plt.figure("Original mask")
     plt.imshow(mask, cmap = "gray")
 
     plt.figure("Restored mask")
     plt.imshow(restored_mask, cmap = "gray")
+
+    plt.figure("Restored pixel vals")
+    plt.imshow(restored_pixel_val, cmap="gray")
     plt.show()
 
 def test_points_coord_in_box():
@@ -138,27 +153,29 @@ def test_points_coord_in_box():
     plt.imshow(restored_mask, cmap="gray")
     plt.show()
 
-def test_val_coord():
+def test_points_coord_in_bbox():
     osp = os.path.join
+    folio_name = r"msXL_315r_b"
     main_dir = r"C:\Data\PhD\palimpsest\Victor_data"
-    image_dir_path = osp(main_dir, r"msXL_315r_rotated")
+    image_dir_path = osp(main_dir, folio_name)
     bbox_fpath = osp(image_dir_path, "dataset_split.json")
     bbox_dict = read_json(bbox_fpath)
-    split = "train"
+    split = "val"
     bbox = read_bboxs(split,bbox_dict)
-    ut_mask_path = osp(image_dir_path, "mask", "msXL_315r_b-undertext_black.png")
-    nonut_mask_path = osp(image_dir_path, "mask", r"msXL_315r_b-not_undertext_more.png")
+    ut_mask_path = osp(image_dir_path, "mask",folio_name + r"-undertext_black.png")
+    nonut_mask_path = osp(image_dir_path, "mask",folio_name+ r"-not_undertext.png")
     rgb_palimp = osp(image_dir_path,"mask",r"rgb-compose.png")
     coords_nonut_x,coords_nonut_y,_ = points_coord_in_bbox(nonut_mask_path,bbox)
     coords_ut_x,coords_ut_y,_ = points_coord_in_bbox(ut_mask_path,bbox)
     mask = LabeledIm(rgb_palimp, 0).im
     mask[coords_nonut_y, coords_nonut_x] = 1
     mask[coords_ut_y, coords_ut_x] = 1
-    save_dir = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\miscellaneous"
+    save_dir = osp(r"C:\Data\PhD\palimpsest\Victor_data", folio_name,"miscellaneous")
     io.imsave(osp(save_dir,"split_"+split+".png"),(mask * 255).astype(np.uint8))
 
 
 if __name__=="__main__":
     #im_path_ut = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\maks\msXL_315r_b-undertext_black.png"
     #im_path_notut = r"C:\Data\PhD\palimpsest\Victor_data\msXL_315r_rotated\maks\msXL_315r_b-not_undertext.png"
-    test_val_coord()
+    #fragment_generation_test()
+    test_points_coord_in_bbox()

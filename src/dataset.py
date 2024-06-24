@@ -15,6 +15,7 @@ def read_points_class(fpath_image_mask,im_msi_pil_ob,bbox,label,max_vals):
     points_object = PointsfromMSI_PIL(im_msi_pil_ob, max_vals, list(zip(xs,ys)))
     features = points_object.points
     return features,labels
+
 def sublist_of_bands(bands,modalities=["M"]):
   bands_subset = []
   for band in bands:

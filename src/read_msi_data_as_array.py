@@ -7,17 +7,27 @@ class DataFromPILImageCube():
     def __init__(self, pil_msi_obj:ImageCubePILobject, max_vals):
         self.pil_msi_obj = pil_msi_obj
         self.max_vals = max_vals
+        self.spectralon_gray_val = self.read_spectralon_values()
 
 
-    def contrast_stretch(self,msi_img):
+    def read_spectralon_values(self):
+        coords = self.pil_msi_obj.spectralon_coords
+        spectralon_gray_val = np.zeros([self.pil_msi_obj.nb_bands,])
+        for band_idx, im_band in enumerate(self.pil_msi_obj.pil_msi_img):
+            points_per_band = list(map(im_band.getpixel, coords))
+            mean_grey_val = np.mean(points_per_band)
+            spectralon_gray_val[band_idx] = mean_grey_val
+        return spectralon_gray_val
+
+    def standartize(self,msi_img):
         """
-
-        :param msi_img:
-        :return:
+        Standartize
         """
         for band_idx in range(self.pil_msi_obj.nb_bands):
-            msi_img[band_idx] = strech_contrast(msi_img[band_idx],self.max_vals[band_idx])
+            msi_img[band_idx] = standartize(msi_img[band_idx],self.spectralon_gray_val[band_idx])
         return msi_img
+
+
 
 
     def convert_pil_to_array(self,pil_msi_obj):
@@ -85,7 +95,7 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
         """
         super().__init__(pil_msi_obj, max_vals)
         self.unstretch_ims_img = self.convert_pil_msi_to_array(pil_msi_obj)
-        self.ims_img = self.contrast_stretch(self.unstretch_ims_img)
+        self.ims_img = self.standartize(self.unstretch_ims_img)
 
 
 
@@ -101,7 +111,7 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
         self.bbox = bbox
         self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
         self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
-        self.ims_img = self.contrast_stretch(self.unstretch_ims_img)
+        self.ims_img = self.standartize(self.unstretch_ims_img)
 
 
 
@@ -118,7 +128,7 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
         self.unstretch_ims_img = None
         self.unstretch_points = self.convert_pil_points_to_array(self.pil_msi_obj)
-        points = self.contrast_stretch(self.unstretch_points)
+        points = self.standartize(self.unstretch_points)
         self.points = np.transpose(points,axes=[1,0])
 
     def convert_pil_points_to_array(self,pil_msi_obj):
@@ -139,6 +149,14 @@ def strech_contrast(val,max_val):
     val = np.clip(val,a_max=max_val,a_min=0.)
     val= val/max_val
     return val
+
+def standartize(im,spectralon_gray_value):
+    """Standartized image by grey_value"""
+    mean_max_value = np.mean(spectralon_gray_value)
+    im = im/mean_max_value
+    im = np.clip(im,a_max=1.0,a_min=0.0)
+    return im
+
 
 def conver_pil_msi_ims_to_array(pil_msi_img,width,height,nb_bands):
     """Convert PIL image cube into array image cube"""

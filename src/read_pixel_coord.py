@@ -25,12 +25,9 @@ class ClassCoord:
                 rotation = eval("Image.ROTATE_{}".format(self.rotate_angle))
                 im = im.transpose(rotation)
             im = np.array(im)
-            if im_mode == "RGBA":
-                im = im[:, :, 3]
-                im = np.amax(im) - im
-        im = im/np.amax(im)
-        coords = np.argwhere(im<0.1)
-        return coords
+        coords = np.argwhere(im==False)
+        coords_x_y = list(zip(list(zip(*coords))[1], list(zip(*coords))[0]))
+        return coords_x_y
 
 def points_coord_in_bbox(fpath,bbox):
     """
@@ -39,7 +36,7 @@ def points_coord_in_bbox(fpath,bbox):
     :param bbox - [top,left,bottom,right] bbox coordinates that defines the range of dataset
     """
     coords = ClassCoord(fpath, 0).coords
-    ys, xs = map(list, zip(*coords))
+    xs,ys = map(list, zip(*coords))
 
     nb_coords = len(coords)
     idx_start = 0
@@ -62,7 +59,6 @@ def points_coord_in_bbox(fpath,bbox):
           break
     nb_coords = idx_end-idx_start
     return xs[idx_start:idx_end], ys[idx_start:idx_end], nb_coords
-
 
 
 
