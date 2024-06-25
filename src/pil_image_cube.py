@@ -1,7 +1,7 @@
 from PIL import Image
 import os
-from read_pixel_coord import ClassCoord
-
+from read_pixel_coord import CoordfromMask
+from util import sublist_of_bands
 
 class ImageCubePILobject:
     def __init__(self,image_dir,folio_name,band_list,rotate_angle):
@@ -26,9 +26,7 @@ class ImageCubePILobject:
         self.pil_msi_img = self.read_msi_image_object()
         self.width, self.height = self.pil_msi_img[0].size
         self.nb_bands = len(self.band_list)
-        self.spectralon_mask_path = os.path.join(self.image_dir,"mask", self.folio_name + "-" + "spectralon.png")
-        s = ClassCoord(self.spectralon_mask_path,self.rotate_angle)
-        self.spectralon_coords = s.coords
+
 
 
     def read_image_object(self,path):
@@ -67,3 +65,12 @@ class ThumbnailMSI_PIL(ImageCubePILobject):
             im = im_band_pil.resize((self.width,self.height))
             thumbnail_msi_img.append(im)
         return thumbnail_msi_img
+
+class MB_MSI_PIL(ImageCubePILobject):
+    def __init__(self, image_dir, folio_name, band_list, rotate_angle):
+        """MB msi_img_obj"""
+
+        self.band_list = sublist_of_bands(band_list,"M")
+        self.spectralon_mask_path = os.path.join(self.image_dir,"mask", self.folio_name + "-" + "spectralon.png")
+        self.spectralon_coords = CoordfromMask(self.spectralon_mask_path,self.rotate_angle).coords
+        super().__init__(image_dir, folio_name, band_list, rotate_angle)

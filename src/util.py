@@ -71,3 +71,12 @@ def generate_coord_inside_bbox(x1,y1,width,height):
         for i in range(width):
             points_coords.append([i+x1,j+y1])
     return points_coords
+
+def sublist_of_bands(bands,modalities=["M"]):
+    """Read sublist of bands from band list"""
+    bands_subset = []
+    for band in bands:
+        for modality in modalities:
+            if modality in band:
+                bands_subset.append(band)
+    return bands_subset

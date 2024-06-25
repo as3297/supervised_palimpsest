@@ -2,7 +2,7 @@ from PIL import Image
 import numpy as np
 
 
-class ClassCoord:
+class CoordfromMask:
     def __init__(self,fpath,rotate_angle):
         """
         :param fpath: path to image of a mask
@@ -35,7 +35,7 @@ def points_coord_in_bbox(fpath,bbox):
     :param fpath - path to image mask
     :param bbox - [top,left,bottom,right] bbox coordinates that defines the range of dataset
     """
-    coords = ClassCoord(fpath, 0).coords
+    coords = CoordfromMask(fpath, 0).coords
     xs,ys = map(list, zip(*coords))
 
     nb_coords = len(coords)

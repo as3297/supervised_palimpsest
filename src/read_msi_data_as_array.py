@@ -7,7 +7,79 @@ class DataFromPILImageCube():
     def __init__(self, pil_msi_obj:ImageCubePILobject, max_vals):
         self.pil_msi_obj = pil_msi_obj
         self.max_vals = max_vals
+
+    def convert_pil_to_array(self,pil_msi_obj):
+        msi_img = conver_pil_msi_ims_to_array(pil_msi_obj.pil_msi_img,
+                                              pil_msi_obj.width,
+                                              pil_msi_obj.height,
+                                              pil_msi_obj.nb_bands)
+        return msi_img
+
+
+class FullImageFromPILImageCube(DataFromPILImageCube):
+    def __init__(self,pil_msi_obj,max_vals):
+        """
+        Read full msi image
+        :param pil_msi_obj:
+        :param max_vals:
+        """
+        super().__init__(pil_msi_obj, max_vals)
+        self.unstretch_ims_img = self.convert_pil_msi_to_array(pil_msi_obj)
+
+
+
+
+class FragmentfromMSI_PIL(DataFromPILImageCube):
+    def __init__(self,pil_msi_obj:ImageCubePILobject,max_vals: list,bbox):
+        """
+        Read points from image
+        :param msi_img: list of PIL image objects of each band of MSI image
+        :param max_vals_per_band:
+        :param band_list: list of bands
+        """
+        super().__init__(pil_msi_obj, max_vals)
+        self.bbox = bbox
+        self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
+        self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
+
+
+
+
+class PointsfromMSI_PIL(DataFromPILImageCube):
+    def __init__(self,pil_msi_obj: ImageCubePILobject,max_vals: list,points_coord):
+        """
+        read points from image
+        :param msi_img: list of PIL image objects of each band of MSI image
+        :param max_vals_per_band:
+        :param band_list: list of bands
+        """
+        super().__init__(pil_msi_obj, max_vals)
+        self.points_coord = points_coord
+        self.width = None
+        self.height = None
+        self.points_coord = points_coord
+        self.nb_points = len(self.points_coord)
+        self.unstretch_ims_img = self.convert_pil_points_to_array(self.pil_msi_obj)
+        points = self.standartize(self.unstretch_points)
+        self.points = np.transpose(points,axes=[1,0])
+
+    def convert_pil_points_to_array(self,pil_msi_obj):
+        """
+        Read values extracted from points
+        :param points_coord:
+        :return: array with dim [nb_bands,nb_points]
+        """
+        points = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points])
+        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
+            points_per_band = list(map(im_band.getpixel,self.points_coord))
+            points[band_idx] = points_per_band
+        return points
+class MBDataFromPILImageCube():
+    """Factory for reading data from Pil MSI image"""
+    def __init__(self, pil_msi_obj:ImageCubePILobject):
+        self.pil_msi_obj = pil_msi_obj
         self.spectralon_gray_val = self.read_spectralon_values()
+        self.ims_img = self.standartize(self.pil_msi_obj.unstretch_ims_img)
 
 
     def read_spectralon_values(self):
@@ -27,15 +99,6 @@ class DataFromPILImageCube():
             msi_img[band_idx] = standartize(msi_img[band_idx],self.spectralon_gray_val[band_idx])
         return msi_img
 
-
-
-
-    def convert_pil_to_array(self,pil_msi_obj):
-        msi_img = conver_pil_msi_ims_to_array(pil_msi_obj.pil_msi_img,
-                                              pil_msi_obj.width,
-                                              pil_msi_obj.height,
-                                              pil_msi_obj.nb_bands)
-        return msi_img
 
 
 class CoordsWindow():
@@ -86,62 +149,7 @@ class PointsWindow(CoordsWindow):
         self.nb_points = len(self.points_coord)
 
 
-class FullImageFromPILImageCube(DataFromPILImageCube):
-    def __init__(self,pil_msi_obj,max_vals):
-        """
-        Read full msi image
-        :param pil_msi_obj:
-        :param max_vals:
-        """
-        super().__init__(pil_msi_obj, max_vals)
-        self.unstretch_ims_img = self.convert_pil_msi_to_array(pil_msi_obj)
-        self.ims_img = self.standartize(self.unstretch_ims_img)
 
-
-
-class FragmentfromMSI_PIL(DataFromPILImageCube):
-    def __init__(self,pil_msi_obj:ImageCubePILobject,max_vals: list,bbox):
-        """
-        Read points from image
-        :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
-        :param band_list: list of bands
-        """
-        super().__init__(pil_msi_obj, max_vals)
-        self.bbox = bbox
-        self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
-        self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
-        self.ims_img = self.standartize(self.unstretch_ims_img)
-
-
-
-class PointsfromMSI_PIL(DataFromPILImageCube):
-    def __init__(self,pil_msi_obj: ImageCubePILobject,max_vals: list,points_coord):
-        """
-        read points from image
-        :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
-        :param band_list: list of bands
-        """
-        super().__init__(pil_msi_obj, max_vals)
-        self.points_coord = points_coord
-        self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
-        self.unstretch_ims_img = None
-        self.unstretch_points = self.convert_pil_points_to_array(self.pil_msi_obj)
-        points = self.standartize(self.unstretch_points)
-        self.points = np.transpose(points,axes=[1,0])
-
-    def convert_pil_points_to_array(self,pil_msi_obj):
-        """
-        Read values extracted from points
-        :param points_coord:
-        :return: array with dim [nb_bands,nb_points]
-        """
-        points = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points])
-        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
-            points_per_band = list(map(im_band.getpixel,self.points_coord))
-            points[band_idx] = points_per_band
-        return points
 
 def strech_contrast(val,max_val):
     """Strech im by max value without oversaturated pixels

@@ -16,13 +16,7 @@ def read_points_class(fpath_image_mask,im_msi_pil_ob,bbox,label,max_vals):
     features = points_object.points
     return features,labels
 
-def sublist_of_bands(bands,modalities=["M"]):
-  bands_subset = []
-  for band in bands:
-      for modality in modalities:
-        if modality in band:
-          bands_subset.append(band)
-  return bands_subset
+
 
 def read_bboxs(split_name,d_bboxs):
     """
