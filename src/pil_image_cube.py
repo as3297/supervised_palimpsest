@@ -26,6 +26,8 @@ class ImageCubePILobject:
         self.pil_msi_img = self.read_msi_image_object()
         self.width, self.height = self.pil_msi_img[0].size
         self.nb_bands = len(self.band_list)
+        self.spectralon_mask_path = os.path.join(self.image_dir, "mask", self.folio_name + "-" + "spectralon.png")
+        self.spectralon_coords = CoordfromMask(self.spectralon_mask_path, self.rotate_angle).coords
 
 
 
@@ -71,6 +73,5 @@ class MB_MSI_PIL(ImageCubePILobject):
         """MB msi_img_obj"""
 
         self.band_list = sublist_of_bands(band_list,"M")
-        self.spectralon_mask_path = os.path.join(self.image_dir,"mask", self.folio_name + "-" + "spectralon.png")
-        self.spectralon_coords = CoordfromMask(self.spectralon_mask_path,self.rotate_angle).coords
+
         super().__init__(image_dir, folio_name, band_list, rotate_angle)

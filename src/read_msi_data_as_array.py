@@ -16,7 +16,7 @@ class DataFromPILImageCube():
         return msi_img
 
 
-class FullImageFromPILImageCube(DataFromPILImageCube):
+class FullMSI(DataFromPILImageCube):
     def __init__(self,pil_msi_obj,max_vals):
         """
         Read full msi image
@@ -29,7 +29,8 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
 
 
 
-class FragmentfromMSI_PIL(DataFromPILImageCube):
+
+class FragmentMSI(DataFromPILImageCube):
     def __init__(self,pil_msi_obj:ImageCubePILobject,max_vals: list,bbox):
         """
         Read points from image
@@ -40,12 +41,23 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
         super().__init__(pil_msi_obj, max_vals)
         self.bbox = bbox
         self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
+        self.pil_msi_img = self.read_fragment()
         self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
 
+    def read_fragment(self):
+        """
+        Read image extracted from bounding box
+        :return: array with dim [nb_bands,nb_points]
+        """
+        fragment_pil_msi_img = []
+        for im_band in self.pil_msi_img:
+                fragment_pil_msi_img.append(im_band.crop(self.bbox))
+        return fragment_pil_msi_img
 
 
 
-class PointsfromMSI_PIL(DataFromPILImageCube):
+
+class PointsMSI(DataFromPILImageCube):
     def __init__(self,pil_msi_obj: ImageCubePILobject,max_vals: list,points_coord):
         """
         read points from image
@@ -60,8 +72,7 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         self.points_coord = points_coord
         self.nb_points = len(self.points_coord)
         self.unstretch_ims_img = self.convert_pil_points_to_array(self.pil_msi_obj)
-        points = self.standartize(self.unstretch_points)
-        self.points = np.transpose(points,axes=[1,0])
+        #self.points = np.transpose(points,axes=[1,0])
 
     def convert_pil_points_to_array(self,pil_msi_obj):
         """
@@ -76,8 +87,8 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         return points
 class MBDataFromPILImageCube():
     """Factory for reading data from Pil MSI image"""
-    def __init__(self, pil_msi_obj:ImageCubePILobject):
-        self.pil_msi_obj = pil_msi_obj
+    def __init__(self, data_from_pil_img_cube_obj:DataFromPILImageCube):
+        self.pil_msi_obj = data_from_pil_img_cube_obj.pil_msi_obj
         self.spectralon_gray_val = self.read_spectralon_values()
         self.ims_img = self.standartize(self.pil_msi_obj.unstretch_ims_img)
 
@@ -91,12 +102,12 @@ class MBDataFromPILImageCube():
             spectralon_gray_val[band_idx] = mean_grey_val
         return spectralon_gray_val
 
-    def standartize(self,msi_img):
+    def standartize(self,msi_img,nb_dims):
         """
         Standartize
         """
         for band_idx in range(self.pil_msi_obj.nb_bands):
-            msi_img[band_idx] = standartize(msi_img[band_idx],self.spectralon_gray_val[band_idx])
+                msi_img[band_idx] = standartize(msi_img[band_idx],self.spectralon_gray_val[band_idx])
         return msi_img
 
 
@@ -125,15 +136,7 @@ class BboxWindow(CoordsWindow):
         self.height = self.bbox[3] - self.bbox[1]
         self.pil_msi_img = self.read_fragment()
 
-    def read_fragment(self):
-        """
-        Read image extracted from bounding box
-        :return: array with dim [nb_bands,nb_points]
-        """
-        fragment_pil_msi_img = []
-        for im_band in self.pil_msi_img:
-                fragment_pil_msi_img.append(im_band.crop(self.bbox))
-        return fragment_pil_msi_img
+
 
 
 class PointsWindow(CoordsWindow):
