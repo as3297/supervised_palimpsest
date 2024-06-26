@@ -20,7 +20,6 @@ class ClassCoord:
         coords: [[row_0,col_0],...,[row_i,col_i]]
         """
         with Image.open(self.fpath) as im:
-            im_mode = im.mode
             if self.rotate_angle > 0:
                 rotation = eval("Image.ROTATE_{}".format(self.rotate_angle))
                 im = im.transpose(rotation)

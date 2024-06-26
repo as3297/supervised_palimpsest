@@ -26,10 +26,6 @@ class DataFromPILImageCube():
         for band_idx in range(self.pil_msi_obj.nb_bands):
             msi_img[band_idx] = standartize(msi_img[band_idx],self.spectralon_gray_val[band_idx])
         return msi_img
-
-
-
-
     def convert_pil_to_array(self,pil_msi_obj):
         msi_img = conver_pil_msi_ims_to_array(pil_msi_obj.pil_msi_img,
                                               pil_msi_obj.width,
@@ -94,7 +90,7 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
         :param max_vals:
         """
         super().__init__(pil_msi_obj, max_vals)
-        self.unstretch_ims_img = self.convert_pil_msi_to_array(pil_msi_obj)
+        self.unstretch_ims_img = self.convert_pil_to_array(pil_msi_obj)
         self.ims_img = self.standartize(self.unstretch_ims_img)
 
 
@@ -142,6 +138,7 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
             points_per_band = list(map(im_band.getpixel,self.points_coord))
             points[band_idx] = points_per_band
         return points
+
 
 def strech_contrast(val,max_val):
     """Strech im by max value without oversaturated pixels

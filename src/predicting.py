@@ -1,6 +1,5 @@
 import copy
 import numpy as np
-from file_reading_tests import LabeledIm
 from read_msi_data_as_array import PointsfromMSI_PIL
 from skimage import io
 from util import read_max_vals,read_band_list,read_json,generate_coord_inside_bbox
@@ -8,7 +7,38 @@ from dataset import sublist_of_bands,read_bboxs
 from pil_image_cube import ImageCubePILobject
 import tensorflow as tf
 import os
+from PIL import Image
+from skimage import io,transform
 
+
+class LabeledIm:
+  def __init__(self, fpath, rotate_angle):
+    """
+    :param image_dir: directory with tif image of palimpsest
+    :param band_list: list of bands
+    :param coord: (left, upper, right, lower) tuple of bounding box coordinates
+    """
+    self.fpath = fpath
+    self.rotate_angle = rotate_angle
+    self.im = self.read_file()
+
+  def read_file(self):
+    """
+    Read image mask
+    :return:
+    coords: [[row_0,col_0],...,[row_i,col_i]]
+    """
+    with Image.open(self.fpath) as im:
+      im_mode = im.mode
+      if self.rotate_angle > 0:
+        rotation = eval("Image.ROTATE_{}".format(self.rotate_angle))
+        im = im.transpose(rotation)
+      im = np.array(im)
+    if im_mode == "RGBA":
+      im = im[:, :, 3]
+      im = np.amax(im) - im
+    im = im / np.amax(im)
+    return im
 def load_data_for_visualization(split,label_mask,folioname,full_page=False):
   osp = os.path.join
   main_dir = r"C:\Data\PhD\palimpsest\Victor_data"
@@ -33,10 +63,10 @@ def load_data_for_visualization(split,label_mask,folioname,full_page=False):
   features = points_ob.points
 
   if label_mask:
-    fpath_ut = osp(image_dir_path,"mask",r"msXL_315r_b-undertext_black.png")
+    fpath_ut = osp(image_dir_path,"mask",folioname+r"-undertext_black.png")
     mask_ut = LabeledIm(fpath_ut, 0).im
     mask_ut = mask_ut[bbox[1]:bbox[3],bbox[0]:bbox[2]]
-    fpath_nonut = osp(image_dir_path,"mask",r"msXL_315r_b-not_undertext.png")
+    fpath_nonut = osp(image_dir_path,"mask",folioname+r"-not_undertext_black.png")
     mask_nonut = LabeledIm(fpath_nonut, 0).im
     mask_nonut = mask_nonut[bbox[1]:bbox[3], bbox[0]:bbox[2]]
     return features, width, height, mask_ut, mask_nonut
@@ -87,6 +117,6 @@ def visualizing_testing_results(saved_model_path,split,folioname,label_mask=True
 
 
 if __name__=="__main__":
-  saved_model_path = r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\20240605-145429\model.keras"
-  folioname = r"msXL_319r_b"
-  visualizing_testing_results(saved_model_path,"val",folioname,label_mask=False,full_page=True)
+  saved_model_path = r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\20240628-084158\model.keras"
+  folioname = r"msXL_315r_b"
+  visualizing_testing_results(saved_model_path,"val",folioname,label_mask=True,full_page=True)

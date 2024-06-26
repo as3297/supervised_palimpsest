@@ -71,3 +71,25 @@ def generate_coord_inside_bbox(x1,y1,width,height):
         for i in range(width):
             points_coords.append([i+x1,j+y1])
     return points_coords
+
+debugging_dict = {
+    "val_bbox": {
+        "x1": 60,
+        "y1": 1090,
+        "x2": 1000,
+        "y2": 1500
+    },
+    "train_bbox": {
+        "x1": 60,
+        "y1": 1090,
+        "x2": 1000,
+        "y2": 1500
+    },
+    "test_bbox": {
+        "x1": 60,
+        "y1": 1090,
+        "x2": 1000,
+        "y2": 1500
+    }
+}
+

@@ -2,10 +2,8 @@ import numpy as np
 import tensorflow as tf
 from model import FCModel,build_model
 print("TensorFlow version:", tf.__version__)
-from pil_image_cube import ImageCubePILobject
-from util import read_max_vals,read_band_list,read_json,extend_json
-from dataset import sublist_of_bands,read_features_labels,\
-  add_classes_in_split, shuffle_between_epoch
+from util import extend_json
+from dataset import add_classes_in_split, shuffle_between_epoch, load_data_for_training
 from datetime import datetime
 import os
 
@@ -13,109 +11,24 @@ osp = os.path.join
 #tf.compat.v1.disable_eager_execution()
 
 
-debugging_dict = {
-    "val_bbox": {
-        "x1": 60,
-        "y1": 1090,
-        "x2": 1000,
-        "y2": 2000
-    },
-    "train_bbox": {
-        "x1": 60,
-        "y1": 1090,
-        "x2": 1000,
-        "y2": 2000
-    },
-    "test_bbox": {
-        "x1": 60,
-        "y1": 1090,
-        "x2": 1000,
-        "y2": 2000
-    }
-}
-
-def load_data_for_training(model_path:str,modalities:list,debugging=False):
-  """
-  Load features and labels from multiple folios
-  """
-  main_path = r"C:\Data\PhD\palimpsest\Victor_data"
-  folios = [r"msXL_315r_b",r"msXL_319r_b"]
-  band_list_path = osp(main_path,"band_list.txt")
-  bands = read_band_list(band_list_path)
-  bands = sublist_of_bands(bands,modalities)
-  bbox_dicts = []
-  dataset=[]
-  for idx,folio_name in enumerate(folios):
-    bbox_fpath = osp(main_path,folio_name, "dataset_split.json")
-    bbox_dict = read_json(bbox_fpath)
-    if debugging:
-      bbox_dict = debugging_dict
-    bbox_dicts.append(bbox_dict)
-
-    if idx==0:
-      dataset = load_data_for_training_from_folio(main_path,folio_name, bands, bbox_dict)
-    else:
-        folio_dataset = load_data_for_training_from_folio(
-            main_path,
-            folio_name, bands,
-            bbox_dict)
-        for subset,subset_val in folio_dataset.items():
-            dataset[subset][0] = np.concatenate([dataset[subset][0],subset_val[0]],axis=0)
-            dataset[subset][1] = np.concatenate([dataset[subset][1],subset_val[1]],axis=0)
-
-    save_data_parameters(model_path,modalities,bbox_dicts,folios)
-    return dataset
-
-def save_data_parameters(save_path,modalities: list, bbox_dicts: list, folios: list):
-    d = {}
-    d["folios"] = folios
-    d["modalities"] = modalities
-    d["coord_boxs"] =  bbox_dicts
-    extend_json(osp(save_path,"dataset_par.json"),d)
-
-def load_data_for_training_from_folio(main_path,folio_name,bands,bbox_dict):
-  """
-  Load features and labels from one folio
-  :return:
-  [],[],[],[] - first list train data [features,labels] for undertext,
-            second list train data [features,labels] for nonundertext,
-            third list validation data [features,labels] for  undertext,
-            forth list validation data [features,labels] for  nonundertext
-
-  """
-  max_val_path = osp(main_path,"bands_max_val.json")
-  max_vals = read_max_vals(max_val_path,bands)
-  image_dir_path = osp(main_path,folio_name)
-
-  ut_mask_path = osp(image_dir_path,"mask",folio_name+r"-undertext_black.png")
-  nonut_mask_path = osp(image_dir_path,"mask",folio_name+r"-not_undertext.png")
-  im_msi_pil_ob = ImageCubePILobject(image_dir_path,folio_name,bands,0)
-
-
-
-  trainset_ut,trainset_nonut = read_features_labels(bbox_dict, im_msi_pil_ob,
-                                  ut_mask_path, nonut_mask_path, max_vals, "train")
-  valset_ut,valset_nonut = read_features_labels(bbox_dict,im_msi_pil_ob,
-                                  ut_mask_path, nonut_mask_path, max_vals, "val")
-
-
-  return {"train_ut":trainset_ut,"train_nonut":trainset_nonut,"val_ut":valset_ut,"val_nonut":valset_nonut}
-
 class PalGraph():
-  def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,optimizer_name):
+  def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,optimizer_name,label_smoothing,loss):
     # Create an instance of the model
     self.nb_units_per_layer = nb_units_per_layer
     self.nb_layers = nb_layers
-
     self.restore_path = restore_path
-
-    self.loss_object = tf.keras.losses.BinaryCrossentropy(
-        from_logits=True,
-        label_smoothing=0.00,
-        axis=-1,
-        reduction='sum_over_batch_size',
-        name='binary_crossentropy'
-    )
+    if loss == "binary_crossentropy":
+      self.loss_object = tf.keras.losses.BinaryCrossentropy(
+          from_logits=True,
+          label_smoothing=label_smoothing,
+          axis=-1,
+          reduction='sum_over_batch_size',
+          name='binary_crossentropy'
+      )
+    elif loss == "hinge":
+      self.loss_object = tf.keras.losses.Hinge(
+    reduction='sum_over_batch_size', name='hinge'
+)
     if optimizer_name == "adam":
         self.learning_rate = 0.0001
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
@@ -219,7 +132,7 @@ def tensorboard_val(gr, epoch):
 
 
 
-def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features):
+def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step):
   d = {}
   d["restore_path"] = gr.restore_path
   d["debugging"] = debugging
@@ -231,6 +144,7 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features):
   d["loss_function"] = gr.loss_object.get_config()
   d["nb_units_per_layer"] = gr.nb_units_per_layer
   d["nb_features"] = nb_features
+  d["learning_rate_decay_epoch_step"] = learning_rate_decay_epoch_step
   extend_json(osp(gr.model_dir,"training_parameters.json"),d)
 
 
@@ -247,22 +161,26 @@ def early_stoppping(val_loss_list,val_loss_cur,epoch,epoch_threshold):
 
 def training(restore_path = None,debugging=False):
   EPOCHS = 100
-  batch_size = 32*4
+  batch_size = 32*8
   modalities = ["M"]
   nb_nodes_in_layer = 30
-  nb_layers = 5
+  nb_layers = 1
   optimizer_name = "adam"
+  label_smoothing = 0.4
+  loss_name = "binary_crossentropy"
   current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
   model_dir = os.path.join(r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", current_time)
+  learning_rate_decay_epoch_step = 0
 
   if not os.path.exists(model_dir):
       os.makedirs(model_dir)
   trainset_ut, trainset_nonut, valset_ut, valset_nonut = load_data_for_training(
       model_dir, modalities, debugging)
   nb_features = trainset_ut[0].shape[1]
-  gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name)
+  gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,label_smoothing,loss_name)
 
-  save_training_parameters(gr, debugging, batch_size, EPOCHS,nb_features)
+  save_training_parameters(gr, debugging, batch_size, EPOCHS,nb_features,
+                           learning_rate_decay_epoch_step)
   val_losses=[]
 
   for epoch in range(EPOCHS):
@@ -296,7 +214,8 @@ def training(restore_path = None,debugging=False):
       gr.val_step(val_batch, tf.constant(valset[1][idx:idx+batch_size],dtype=tf.int32))
     tensorboard_val(gr,epoch)
 
-    if epoch%15==0 and epoch>0:
+    if learning_rate_decay_epoch_step>0:
+      if epoch%learning_rate_decay_epoch_step==0 and epoch>0:
         gr.learning_rate = gr.learning_rate / 10
         gr.optimizer.learning_rate.assign(gr.learning_rate)
 
@@ -319,4 +238,4 @@ def testing(saved_model_path):
   pass
 
 if __name__=="__main__":
-  training(None,True)
+  training(None,False)

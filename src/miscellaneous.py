@@ -1,5 +1,5 @@
-from read_msi_data_as_array import conver_pil_msi_ims_to_array
-from pil_image_cube import ThumbnailMSI_PIL
+from read_msi_data_as_array import conver_pil_msi_ims_to_array,FragmentfromMSI_PIL
+from pil_image_cube import ThumbnailMSI_PIL,ImageCubePILobject
 import numpy as np
 from util import save_json, read_band_list, read_json, order_band_list
 import os
@@ -7,8 +7,25 @@ from read_pixel_coord import points_coord_in_bbox
 import csv
 from PIL import Image
 from skimage import io,transform
+from dataset import read_bboxs
 
-
+def save_the_subset_fragment_band_14():
+    osp = os.path.join
+    main_path = r"C:\Data\PhD\palimpsest\Victor_data"
+    folio_name = r"msXL_319r_b"
+    subset = "val"
+    band_list_path = osp(main_path, "band_list.txt")
+    bands = read_band_list(band_list_path)
+    image_dir_path = osp(main_path, folio_name)
+    bbox_fpath = osp(main_path, folio_name, "dataset_split.json")
+    bbox_dict = read_json(bbox_fpath)
+    bbox = read_bboxs(subset, bbox_dict)
+    band_idx =14
+    folio_ob = ImageCubePILobject(image_dir_path, folio_name, bands, 0)
+    fragment_im = FragmentfromMSI_PIL(folio_ob, 0,bbox).ims_img[band_idx]
+    fragment_im= (fragment_im*255).astype(np.uint8)
+    save_path = osp(image_dir_path,"miscellaneous",subset +"_"+bands[band_idx]+".png")
+    io.imsave(save_path,fragment_im)
 def create_band_list(cube_dir, txt_save_fpath):
     """
     Create band list
@@ -108,5 +125,6 @@ def rotate_imgs(im_dir,save_dir):
 
 
 if __name__ == "__main__":
-    rotate_imgs(r"c:\Data\PhD\palimpsest\Victor_data\msXL_319r_b",r"C:\Data\PhD\palimpsest\Victor_data\msXL_319r_b\rotated")
+    #rotate_imgs(r"c:\Data\PhD\palimpsest\Victor_data\msXL_319r_b",r"C:\Data\PhD\palimpsest\Victor_data\msXL_319r_b\rotated")
+    save_the_subset_fragment_band_14()
 
