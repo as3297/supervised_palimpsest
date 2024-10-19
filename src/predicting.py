@@ -1,14 +1,12 @@
 import copy
 import numpy as np
-from read_msi_data_as_array import PointsfromMSI_PIL
-from skimage import io
-from util import read_max_vals,read_band_list,read_json,generate_coord_inside_bbox
-from dataset import sublist_of_bands,read_bboxs
+from msi_data_as_array import PointsfromMSI_PIL
+from util import read_band_list, read_json, generate_coord_inside_bbox, read_split_box_coord
 from pil_image_cube import ImageCubePILobject
 import tensorflow as tf
 import os
 from PIL import Image
-from skimage import io,transform
+from skimage import io
 
 
 class LabeledIm:
@@ -39,27 +37,27 @@ class LabeledIm:
       im = np.amax(im) - im
     im = im / np.amax(im)
     return im
-def load_data_for_visualization(split,label_mask,folioname,full_page=False):
+def load_data_for_visualization(split,label_mask,manuscriptname,folioname,full_page=False):
   osp = os.path.join
   main_dir = r"C:\Data\PhD\palimpsest\Victor_data"
-  band_list_path = osp(main_dir,"band_list.txt")
-  bands = read_band_list(band_list_path)
-  bands = sublist_of_bands(bands,"M")
+  manus_dir_path = osp(main_dir,manuscriptname)
+  image_dir_path = osp(manus_dir_path,folioname)
+  band_list_path = osp(manus_dir_path,"band_list.txt")
+  bands = read_band_list(band_list_path,"M")
   max_val_path = osp(main_dir,"bands_max_val.json")
-  max_vals = read_max_vals(max_val_path,bands)
-  image_dir_path = osp(main_dir,folioname)
-  bbox_fpath = osp(image_dir_path,"dataset_split.json")
 
-  im_msi_pil_ob = ImageCubePILobject(image_dir_path, folioname, bands, 0)
+  bbox_fpath = osp(manus_dir_path,folioname,"dataset_split.json")
+
+  im_msi_pil_ob = ImageCubePILobject(manus_dir_path, folioname, bands, 0)
   if full_page:
     bbox = [0,0,5326,7100]
   else:
     bbox_dict = read_json(bbox_fpath)
-    bbox = read_bboxs(split, bbox_dict)
+    bbox = read_split_box_coord(split, bbox_dict)
   width = bbox[2]-bbox[0]
   height = bbox[3]-bbox[1]
   points_coord = generate_coord_inside_bbox(bbox[0],bbox[1],width,height)
-  points_ob = PointsfromMSI_PIL(im_msi_pil_ob, max_vals, points_coord)
+  points_ob = PointsfromMSI_PIL(im_msi_pil_ob, points_coord)
   features = points_ob.points
 
   if label_mask:
@@ -85,15 +83,17 @@ def overlay_mask(im,mask,color):
   new_im[mask == 0] = im[mask == 0] * alpha+inv_mask[mask==0]
   return new_im
 
-def visualizing_testing_results(saved_model_path,split,folioname,label_mask=True,full_page=False):
+def visualizing_testing_results(saved_model_path,split,manuscriptname,folioname,label_mask=True,full_page=False):
   #imported = tf.saved_model.load(saved_model_path)
   #imported = imported.signatures["serving_default"]
   imported = tf.keras.models.load_model(saved_model_path)
+  print("Loaded model from path: {}".format(saved_model_path))
   if label_mask:
-    features, width,height,mask_ut,mask_nonut = load_data_for_visualization(split,label_mask,folioname,full_page)
+    features, width,height,mask_ut,mask_nonut = load_data_for_visualization(split,label_mask,manuscriptname,folioname,full_page)
 
   else:
-    features, width, height = load_data_for_visualization(split, label_mask,folioname,full_page)
+    features, width, height = load_data_for_visualization(split, label_mask,manuscriptname,folioname,full_page)
+  print("Loaded data from folio: {}".format(folioname))
   batch_size = 256
   nb_samples = len(features)
   res = nb_samples%batch_size
@@ -117,6 +117,9 @@ def visualizing_testing_results(saved_model_path,split,folioname,label_mask=True
 
 
 if __name__=="__main__":
-  saved_model_path = r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\20240628-084158\model.keras"
-  folioname = r"msXL_315r_b"
-  visualizing_testing_results(saved_model_path,"val",folioname,label_mask=True,full_page=True)
+  saved_model_path = r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\20240926-113459\model.keras"
+  manuscriptname = r"Verona_XL_(38)"
+  folionames = [r"msXL_315r_b"]
+  full_page = False
+  for folioname in folionames:
+    visualizing_testing_results(saved_model_path,"val",manuscriptname,folioname,label_mask=True,full_page=full_page)

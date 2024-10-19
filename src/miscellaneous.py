@@ -1,13 +1,13 @@
-from read_msi_data_as_array import conver_pil_msi_ims_to_array,FragmentfromMSI_PIL
+
+from msi_data_as_array import conver_pil_msi_ims_to_array,FragmentfromMSI_PIL
 from pil_image_cube import ThumbnailMSI_PIL,ImageCubePILobject
 import numpy as np
 from util import save_json, read_band_list, read_json, order_band_list
 import os
-from read_pixel_coord import points_coord_in_bbox
+from pixel_coord import points_coord_in_bbox
 import csv
 from PIL import Image
 from skimage import io,transform
-from dataset import read_bboxs
 
 def save_the_subset_fragment_band_14():
     osp = os.path.join
@@ -26,6 +26,7 @@ def save_the_subset_fragment_band_14():
     fragment_im= (fragment_im*255).astype(np.uint8)
     save_path = osp(image_dir_path,"miscellaneous",subset +"_"+bands[band_idx]+".png")
     io.imsave(save_path,fragment_im)
+
 def create_band_list(cube_dir, txt_save_fpath):
     """
     Create band list
@@ -67,7 +68,7 @@ def find_max(im,max_val):
             break
     return max_val
 
-def store_max_val(image_dir,band_list_path,fpath_save):
+def store_max_val(main_dir,folio_name,band_list_path,fpath_save):
     """
     Read maximum values from image cube of folio "msXL_315r_b"
     :param image_dir:
@@ -75,9 +76,8 @@ def store_max_val(image_dir,band_list_path,fpath_save):
     :param fpath_save:
     :return:
     """
-    folio_name = "msXL_315r_b"
-    bands = read_band_list(band_list_path)
-    obj = ThumbnailMSI_PIL(image_dir,folio_name,bands,0,scale_ratio=20)
+    bands = read_band_list(band_list_path,modalities=None)
+    obj = ThumbnailMSI_PIL(main_dir,folio_name,bands,0,scale_ratio=20)
     nb_bands = len(obj.band_list)
     msi_ims = conver_pil_msi_ims_to_array(obj.msi_img_thumbnail,obj.width,obj.height,nb_bands)
     max_vals = calculate_max_of_bands(msi_ims , bands)
@@ -125,6 +125,11 @@ def rotate_imgs(im_dir,save_dir):
 
 
 if __name__ == "__main__":
+    main_dir = r"c:\Data\PhD\palimpsest\Victor_data\Paris_Coislin"
+    folio_name = r"Par_coislin_393_054r"
+    image_dir = os.path.join(main_dir,folio_name)
+    band_list_path = os.path.join(main_dir,r"band_list.txt")
+    fpath_save = os.path.join(main_dir,"bands_max_val")
     #rotate_imgs(r"c:\Data\PhD\palimpsest\Victor_data\msXL_319r_b",r"C:\Data\PhD\palimpsest\Victor_data\msXL_319r_b\rotated")
-    save_the_subset_fragment_band_14()
-
+    #save_the_subset_fragment_band_14()
+    store_max_val(main_dir,folio_name,band_list_path,fpath_save)

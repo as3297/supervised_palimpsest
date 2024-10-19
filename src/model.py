@@ -3,18 +3,23 @@ from tensorflow import keras
 from keras import Model
 from keras.saving import register_keras_serializable
 from keras.layers import Dense, Dropout, BatchNormalization, ReLU
+from tensorflow.python.distribute.device_util import current
 
-def build_model(nb_features,nb_units_per_layer,nb_layers):
+
+def build_model(nb_features,nb_units_per_layer,nb_layers,dropout_rate,batch_norm=False):
   inputs = keras.Input(shape=(nb_features,), name="counts")
+  current_nb_units_per_layer = nb_units_per_layer
   for layer_idx in range(nb_layers):
     if layer_idx==0:
       x = Dense(nb_units_per_layer, activation=None, name="dense_{}".format(layer_idx))(inputs)
     else:
+      current_nb_units_per_layer = round(1.3*current_nb_units_per_layer)
       x = Dense(nb_units_per_layer, activation=None, name="dense_{}".format(layer_idx))(x)
-    x = BatchNormalization(axis=1,name="batchnorm_{}".format(layer_idx))(x)
+    if batch_norm:
+      x = BatchNormalization(axis=1,name="batchnorm_{}".format(layer_idx))(x)
     x = ReLU(name="relu_{}".format(layer_idx))(x)
-    #x = Dropout(0.5,name="dropout_{}".format(layer_idx))(x)
-  outputs = Dense(1, name="predictions",activation=None)(x)
+    x = Dropout(dropout_rate,name="dropout_{}".format(layer_idx))(x)
+  outputs = Dense(1, name="predictions",activation="sigmoid")(x)
   return keras.Model(inputs=inputs, outputs=outputs)
 
 @register_keras_serializable(package="MyModel", name="FCModel")

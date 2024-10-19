@@ -1,10 +1,10 @@
 from PIL import Image
 import os
-from read_pixel_coord import ClassCoord
+from pixel_coord import ClassCoord
 
 
 class ImageCubePILobject:
-    def __init__(self,image_dir,folio_name,band_list,rotate_angle):
+    def __init__(self,folio_dir,folio_name,band_list,rotate_angle):
         """
         Read MSI image cube as a list of PIL images from a dir with stored image bands as tif images.
         The folder should contain only images of actual bands.
@@ -15,7 +15,8 @@ class ImageCubePILobject:
         :param band_list: list of bands
         :param coord: (left, upper, right, lower) tuple of bounding box coordinates
         """
-        self.image_dir = image_dir
+        self.folio_dir = folio_dir
+        self.image_dir = os.path.join(folio_dir, folio_name)
         self.folio_name = folio_name
         if len(band_list)==0:
             for fname in os.listdir(self.image_dir):
@@ -26,9 +27,7 @@ class ImageCubePILobject:
         self.pil_msi_img = self.read_msi_image_object()
         self.width, self.height = self.pil_msi_img[0].size
         self.nb_bands = len(self.band_list)
-        self.spectralon_mask_path = os.path.join(self.image_dir,"mask", self.folio_name + "-" + "spectralon.png")
-        s = ClassCoord(self.spectralon_mask_path,self.rotate_angle)
-        self.spectralon_coords = s.coords
+
 
 
     def read_image_object(self,path):
@@ -44,6 +43,8 @@ class ImageCubePILobject:
         msi_img = []
         for idx, band_name in enumerate(self.band_list):
             fpath = os.path.join(self.image_dir, self.folio_name + "-" + band_name + ".tif")
+            if not os.path.exists(fpath):
+                fpath = os.path.join(self.image_dir, self.folio_name + "+" + band_name + ".tif")
             im = self.read_image_object(fpath)
             msi_img.append(im)
         return msi_img

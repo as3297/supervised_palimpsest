@@ -26,30 +26,22 @@ def read_json(fpath):
         d = json.load(json_file)
     return d
 
-def read_band_list(fpath):
+def read_band_list(fpath,modalities):
     with open(fpath, 'r') as f:
         lines = f.readlines()
     bands = []
     for line in lines:
         bands.append(line.strip("\n"))
+    if not modalities is None:
+        bands = sublist_of_bands(bands,modalities)
     return bands
-
-def read_max_vals(fpath_max_val,bands_list):
-    """
-
-    :param fpath_max_val:
-    :param band_list:
-    :return:
-    """
-    d = read_json(fpath_max_val)
-    max_vals = np.zeros([len(bands_list)])
-    if len(bands_list)==0:
-        bands_list = list(d.keys())
-        bands_list = order_band_list(bands_list)
-
-    for band_idx, band_name in enumerate(bands_list):
-        max_vals[band_idx] = d[band_name]
-    return max_vals
+def sublist_of_bands(bands,modalities=["M"]):
+  bands_subset = []
+  for band in bands:
+      for modality in modalities:
+        if modality in band:
+          bands_subset.append(band)
+  return bands_subset
 
 def order_band_list(bands):
     ordered_bands = []
@@ -93,3 +85,18 @@ debugging_dict = {
     }
 }
 
+def read_split_box_coord(split_name,d_bboxs):
+    """
+    Read bbox coords from json file according to dataset split name
+    :param split_name: str,  "train", "test", "val"
+    :param d_bboxs: dictionary for the class with data split boxes
+    :return:
+    list, [x1,y1,x2,y2]
+    """
+    bbox = []
+    for bbox_name,d_bbox in d_bboxs.items():
+        if split_name in bbox_name:
+            bbox = [d_bbox["x1"],d_bbox["y1"],d_bbox["x2"],d_bbox["y2"]]
+    if len(bbox)==0:
+        raise IOError("Split name \"{}\" does not correspond any of the box names \"{}\"".format(split_name,d_bboxs.keys()))
+    return bbox
