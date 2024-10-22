@@ -35,6 +35,7 @@ def read_band_list(fpath,modalities):
     if not modalities is None:
         bands = sublist_of_bands(bands,modalities)
     return bands
+
 def sublist_of_bands(bands,modalities=["M"]):
   bands_subset = []
   for band in bands:

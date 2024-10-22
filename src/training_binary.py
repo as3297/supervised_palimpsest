@@ -221,7 +221,7 @@ def training(restore_path = None,debugging=False):
     base_data_dir = osp(main_data_dir,palimpsest_dir)
     folios = [r"Par_coislin_393_054r"]
     ut_mask_file = r"10nn_undertext_no_ot_black"
-    nonut_mask_file = r"bg_black"
+    nonut_mask_file = r"bg_1_black"
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     model_dir = os.path.join(r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training",palimpsest_dir, current_time)
     learning_rate_decay_epoch_step = 0

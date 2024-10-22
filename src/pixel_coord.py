@@ -25,6 +25,10 @@ class ClassCoord:
                 rotation = eval("Image.ROTATE_{}".format(self.rotate_angle))
                 im = im.transpose(rotation)
             im = np.array(im)
+        if not im.dtype == bool:
+            if im.max()>1:
+                im = im/im.max()
+            im = im>0.5
         coords = np.argwhere(im==False)
         coords_x_y = list(zip(list(zip(*coords))[1], list(zip(*coords))[0]))
         return coords_x_y
