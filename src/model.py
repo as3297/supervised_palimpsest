@@ -11,15 +11,15 @@ def build_model(nb_features,nb_units_per_layer,nb_layers,dropout_rate,batch_norm
   current_nb_units_per_layer = nb_units_per_layer
   for layer_idx in range(nb_layers):
     if layer_idx==0:
-      x = Dense(nb_units_per_layer, activation=None, name="dense_{}".format(layer_idx))(inputs)
+      x = Dense(nb_units_per_layer, activation=None,kernel_initializer='glorot_uniform', name="dense_{}".format(layer_idx))(inputs)
     else:
       current_nb_units_per_layer = round(1.3*current_nb_units_per_layer)
-      x = Dense(nb_units_per_layer, activation=None, name="dense_{}".format(layer_idx))(x)
+      x = Dense(nb_units_per_layer, activation=None, kernel_initializer="he_normal", name="dense_{}".format(layer_idx))(x)
     if batch_norm:
       x = BatchNormalization(axis=1,name="batchnorm_{}".format(layer_idx))(x)
     x = ReLU(name="relu_{}".format(layer_idx))(x)
     x = Dropout(dropout_rate,name="dropout_{}".format(layer_idx))(x)
-  outputs = Dense(1, name="predictions",activation="sigmoid")(x)
+  outputs = Dense(1, name="predictions",activation="sigmoid",kernel_initializer="he_normal",)(x)
   return keras.Model(inputs=inputs, outputs=outputs)
 
 @register_keras_serializable(package="MyModel", name="FCModel")
