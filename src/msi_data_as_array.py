@@ -31,7 +31,7 @@ class NormalizingGray():
         max_vals = np.zeros((len(band_list)))
         for band_idx,band_name in enumerate(band_list):
             if band_name[0].lower()=="m":
-                max_val = self.read_spectralon_value(band_idx)
+                max_val = self.max_values_dict[band_name]
             elif band_name[0].lower()=="w":
                 max_val = self.max_values_dict[band_name]
             max_vals[band_idx]=max_val
