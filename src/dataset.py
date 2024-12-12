@@ -2,7 +2,7 @@ import numpy as np
 from pixel_coord import points_coord_in_bbox
 from msi_data_as_array import PointsfromMSI_PIL,FullImageFromPILImageCube
 from pil_image_cube import ImageCubePILobject
-from util import read_band_list,read_json,extend_json,debugging_dict, read_split_box_coord
+from util import read_band_list, read_json, extend_json, debugging_dict, read_split_box_coord, save_json
 from copy import deepcopy
 import os
 from matplotlib import pyplot as plt
@@ -36,7 +36,6 @@ def load_data_for_training(model_path: str, modalities: list, base_data_dir,foli
             for subset, subset_data in folio_dataset.items():
                 dataset[subset][0] = np.concatenate([dataset[subset][0], subset_data[0]], axis=0)
                 dataset[subset][1] = np.concatenate([dataset[subset][1], subset_data[1]], axis=0)
-        print("Folio {} number of points in train ut set={}".format(folio_name,len(dataset["train_ut"][1])))
         if len(model_path)>0:
             save_data_parameters(model_path, modalities, bbox_dicts, folios,ut_mask_file,nonut_mask_file)
     return dataset["train_ut"],dataset["train_nonut"],dataset["val_ut"],dataset["val_nonut"]
@@ -49,7 +48,12 @@ def save_data_parameters(save_path, modalities: list, bbox_dicts: list, folios: 
     d["coord_boxs"] = bbox_dicts
     d["ut_mask_file"] = ut_mask_file
     d["nonut_mask_file"] = nonut_mask_file
-    extend_json(osp(save_path, "dataset_par.json"), d)
+    save_path = osp(save_path, "dataset_par.json")
+    if not os.path.exists(save_path):
+        save_json(save_path, d)
+    else:
+        extend_json(save_path, d)
+
 
 
 def load_data_for_training_from_folio(main_path, folio_name, bands, bbox_dict,ut_mask_file,nonut_mask_file):
