@@ -64,9 +64,5 @@ def points_coord_in_bbox(fpath,bbox):
     nb_coords = idx_end-idx_start
     return xs[idx_start:idx_end], ys[idx_start:idx_end], nb_coords
 
-
-
-
-
 if __name__=="__main__":
     pass

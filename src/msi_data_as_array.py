@@ -165,6 +165,34 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
             points[band_idx] = points_per_band
         return points
 
+class PointfromMSI_PIL(DataFromPILImageCube):
+    def __init__(self,pil_msi_obj: ImageCubePILobject,point_coord):
+        """
+        read points from image
+        :param msi_img: list of PIL image objects of each band of MSI image
+        :param max_vals_per_band:
+        :param points_coords: list of coordinates
+        """
+        super().__init__(pil_msi_obj)
+        self.point_coord = point_coord
+        self.unstretch_ims_img = None
+        self.unstretch_point = self.convert_pil_points_to_array(self.pil_msi_obj)
+        point = self.standartize(self.unstretch_points)
+        self.point = np.transpose(point,[1,0])
+
+
+    def convert_pil_points_to_array(self,pil_msi_obj):
+        """
+        Read values extracted from points
+        :param points_coord:
+        :return: array with dim [nb_bands,nb_points]
+        """
+        points = np.zeros([pil_msi_obj.nb_bands,1])
+        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
+            point_per_band = im_band.getpixel(self.point_coord)
+            points[band_idx] = point_per_band
+        return points
+
 class PointsfromRatio(DataFromPILImageCube):
     def __init__(self, pil_msi_obj: ImageCubePILobject, points_coord):
         """
