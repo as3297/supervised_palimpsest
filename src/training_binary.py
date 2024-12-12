@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from model import FCModel,build_model
 print("TensorFlow version:", tf.__version__)
-from util import extend_json
+from util import extend_json, save_json
 from dataset import add_classes_in_split, shuffle_between_epoch, load_data_for_training, resample_nb_dataset_points
 from datetime import datetime
 import os
@@ -167,7 +167,11 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
 
   d["weight_decay"] = gr.optimizer.get_config()["weight_decay"]
   d["dropout_rate"] = dropout_rate
-  extend_json(osp(gr.model_dir,"training_parameters.json"),d)
+  save_path = osp(gr.model_dir,"training_parameters.json")
+  if not os.path.exists(save_path):
+     save_json(save_path, d)
+  else:
+    extend_json(save_path, d)
 
 
 class EarlyStopping:
@@ -175,14 +179,27 @@ class EarlyStopping:
         self.patience = patience
         self.wait = 0
         self.model = model
-        self.best_val_acc = float('-inf')
+        self.best_val_loss = float('inf')
+        self.best_val_acc = 0.0
         self.save_weights = False
         self.best_weights = None
         self.early_stop = False
 
-    def early_stoppping(self,val_acc):
-        if val_acc > self.best_val_acc:
-            self.best_val_loss = val_acc
+    def early_stoppping(self,val_loss=None,val_acc=None):
+        if val_loss is None and val_acc is None:
+            raise ValueError("Either validation loss or validation accuracy should be provided for EarlyStoping")
+        elif val_loss is not None and val_acc is not None:
+            raise ValueError("Only one of validation loss or validation accuracy should be provided for EarlyStoping")
+        criteria = False
+        if val_acc is not None:
+            criteria = val_acc > self.best_val_acc
+            if criteria:
+                self.best_val_acc = val_acc
+        if val_loss is not None:
+            criteria = val_loss < self.best_val_loss
+            if criteria:
+                self.best_val_loss = val_loss
+        if criteria:
             self.wait = 0  # reset wait counter
             self.best_weights = self.model.get_weights()  # save best model weights
         else:
@@ -208,11 +225,11 @@ def training(restore_path = None,debugging=False):
     EPOCHS = 500
     batch_size = 32*4
     modalities = ["M"]
-    nb_nodes_in_layer = 20
-    nb_layers = 5
+    nb_nodes_in_layer = 256
+    nb_layers = 4
     optimizer_name = "adamw"
-    weight_decay = 0.1
-    learning_rate = 0.00001
+    weight_decay = 0.0
+    learning_rate = 0.000001
     dropout_rate = 0.0
     label_smoothing = 0.1
     loss_name = "binary_crossentropy"
@@ -220,8 +237,8 @@ def training(restore_path = None,debugging=False):
     palimpsest_dir = r"Paris_Coislin"
     base_data_dir = osp(main_data_dir,palimpsest_dir)
     folios = [r"Par_coislin_393_054r"]
-    ut_mask_file = r"10nn_undertext_no_ot_black"
-    nonut_mask_file = r"bg_1_black"
+    ut_mask_file = r"undertext_cleaned_10nn_ot_sub_black"
+    nonut_mask_file = r"bg_lines_ot_subtracted_black"
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     model_dir = os.path.join(r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training",palimpsest_dir, current_time)
     learning_rate_decay_epoch_step = 0
@@ -291,7 +308,7 @@ def training(restore_path = None,debugging=False):
           f'Val Accuracy: {gr.val_acc.result() * 100:0.2f}'
         )
 
-        early_stop.early_stoppping(gr.val_acc.result())
+        early_stop.early_stoppping( val_loss=None,val_acc=gr.val_acc.result())
         if early_stop.early_stop and epoch>50:
             break
         #np.save(osp(gr.model_dir, r'optimizer.npy'), gr.optimizer.get_weights())

@@ -1,4 +1,5 @@
 import tensorflow as tf
+from joblib.numpy_pickle_utils import BUFFER_SIZE
 from tensorflow import keras
 from keras.layers import Dense, Dropout, BatchNormalization, ReLU
 from pixel_coord import points_coord_in_bbox
@@ -49,21 +50,20 @@ def read_feature_map_coords(main_dir,folio_name,class_name,split_name):
     xs, ys, _ = points_coord_in_bbox(fpath_image_mask, bbox)
     return xs, ys
 
-def generator(main_dir,modality,folio):
+def generator(main_dir,modality,folio,class_names_dict):
     band_list_file = osp(main_dir, "band_list.txt")
     band_list = read_band_list(band_list_file, modality)
+    BUFFER_SIZE = 4
     rotate_angle = 0  # Assigning a default rotate angle
     im_pil_ob = ImageCubePILobject(main_dir, folio, band_list, rotate_angle)
-    features = {}
-    label_dict = {"undertext":0,"bg":1,"overtext":2}
     for split_name in ["train", "val", "test"]:
-        for class_name in ["undertext","bg","overtext"]:
+        for class_name, class_idx in class_names_dict.items():
             xs, ys = read_feature_map_coords(main_dir,folio,class_name,split_name)
             points_object = PointsfromMSI_PIL(pil_msi_obj=im_pil_ob, points_coord=list(zip(xs, ys)))
             features = points_object.points
-            labels = [label_dict[class_name]]*len(xs)
-            dataset = tf.data.Dataset.from_tensor_slices(random_numbers)
-
+            labels = [class_idx]*len(xs)
+            ds = tf.data.Dataset.from_tensor_slices({"xs,ys":(xs,ys),"features":features,"label":labels})
+            ds = ds.shuffle(BUFFER_SIZE).repeat()
             
 
 
