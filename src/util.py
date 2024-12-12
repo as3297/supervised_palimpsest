@@ -14,13 +14,16 @@ def save_json(fpath,d):
 
 def extend_json(fpath,d):
     """
-    Save json file
+    Extend dictionary in json file
     fpath - path to json file, should end with .json
     d - dictionary to save
     """
+    d_old = read_json(fpath)
+    d.update(d_old)
     # Write the dictionary to a JSON file
-    with open(fpath, 'a') as json_file:
+    with open(fpath, 'w') as json_file:
         json.dump(d, json_file, indent=4)
+
 def read_json(fpath):
     with open(fpath, 'r') as json_file:
         d = json.load(json_file)
