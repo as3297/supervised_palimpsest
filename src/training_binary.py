@@ -201,7 +201,7 @@ class EarlyStopping:
                 self.best_val_loss = val_loss
         if criteria:
             self.wait = 0  # reset wait counter
-            self.best_weights = self.model.get_weights()  # save best model weights
+            self.best_weights = self.model.get_weights()  # save best model weightstraining_binary.py
         else:
             self.wait += 1
             print(f'Validation loss did not improve for {self.wait} epochs.')

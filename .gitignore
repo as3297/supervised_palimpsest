@@ -1,5 +1,4 @@
 documents/
-temp/
 .idea/
 src/__pycache__/
 *.ipynb
