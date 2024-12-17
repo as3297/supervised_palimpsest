@@ -118,7 +118,7 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
         self.unstretch_ims_img = self.convert_pil_to_array(pil_msi_obj)
         im = copy.deepcopy(self.unstretch_ims_img)
         ims_img = self.standartize(im)
-        self.ims_img = np.transpose(ims_img, axes=[2, 0, 1])
+        self.ims_img = np.transpose(ims_img, axes=[1, 2, 0])
 
 class FragmentfromMSI_PIL(DataFromPILImageCube):
     def __init__(self,pil_msi_obj:ImageCubePILobject,bbox):
@@ -133,7 +133,7 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
         self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
         self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
         ims_img = self.standartize(self.unstretch_ims_img)
-        self.ims_img = np.transpose(ims_img, axes=[2, 0, 1])
+        self.ims_img = np.transpose(ims_img, axes=[1, 2, 0])
 
 
 
