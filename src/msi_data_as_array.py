@@ -117,14 +117,14 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
         super().__init__(pil_msi_obj)
         self.unstretch_ims_img = self.convert_pil_to_array(pil_msi_obj)
         im = copy.deepcopy(self.unstretch_ims_img)
-        self.ims_img = self.standartize(im)
+        ims_img = self.standartize(im)
+        self.ims_img = np.transpose(ims_img, axes=[2, 0, 1])
 
 class FragmentfromMSI_PIL(DataFromPILImageCube):
     def __init__(self,pil_msi_obj:ImageCubePILobject,bbox):
         """
         Read points from image
         :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
         :param bbox: [left, upper, right, and lower]
 
         """
@@ -132,7 +132,8 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
         self.bbox = bbox
         self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
         self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
-        self.ims_img = self.standartize(self.unstretch_ims_img)
+        ims_img = self.standartize(self.unstretch_ims_img)
+        self.ims_img = np.transpose(ims_img, axes=[2, 0, 1])
 
 
 
@@ -177,8 +178,7 @@ class PointfromMSI_PIL(DataFromPILImageCube):
         self.point_coord = point_coord
         self.unstretch_ims_img = None
         self.unstretch_point = self.convert_pil_points_to_array(self.pil_msi_obj)
-        point = self.standartize(self.unstretch_points)
-        self.point = np.transpose(point,[1,0])
+        self.point = self.standartize(self.unstretch_point)
 
 
     def convert_pil_points_to_array(self,pil_msi_obj):
@@ -187,11 +187,11 @@ class PointfromMSI_PIL(DataFromPILImageCube):
         :param points_coord:
         :return: array with dim [nb_bands,nb_points]
         """
-        points = np.zeros([pil_msi_obj.nb_bands,1])
+        point = np.zeros([pil_msi_obj.nb_bands,])
         for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
             point_per_band = im_band.getpixel(self.point_coord)
-            points[band_idx] = point_per_band
-        return points
+            point[band_idx] = point_per_band
+        return point
 
 class PointsfromRatio(DataFromPILImageCube):
     def __init__(self, pil_msi_obj: ImageCubePILobject, points_coord):
@@ -278,7 +278,6 @@ def standartize(im,max_value):
     im = im/max_value
     im = np.clip(im,a_max=1.0,a_min=0.0)
     return im
-
 
 def conver_pil_msi_ims_to_array(pil_msi_img,width,height,nb_bands):
     """Convert PIL image cube into array image cube"""
