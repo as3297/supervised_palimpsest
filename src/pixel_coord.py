@@ -30,7 +30,7 @@ class ClassCoord:
                 im = im/im.max()
             im = im>0.5
         coords = np.argwhere(im==False)
-        coords_x_y = list(zip(list(zip(*coords))[1], list(zip(*coords))[0]))
+        coords_x_y = list(zip(coords[:,1],coords[:,0]))
         return coords_x_y
 
 def points_coord_in_bbox(fpath,bbox):

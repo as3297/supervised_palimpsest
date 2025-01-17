@@ -37,7 +37,7 @@ def create_dataset_coords(coords, labels,main_paths, palimpsest_names,shuffle=Tr
     dataset = tf.data.Dataset.from_tensor_slices({"coords": coords, "labels": labels, "main_paths": main_paths,
                                                   "palimpsest_names": palimpsest_names,"pixel_values": [None]*len(labels)})
     if shuffle:
-        dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
+        dataset = dataset.shuffle(buffer_size=len(labels))
     return dataset
 
 
