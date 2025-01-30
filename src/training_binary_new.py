@@ -41,33 +41,34 @@ class PalGraph():
     elif optimizer_name == "adamw":
         #adam with weight decay
         self.optimizer = tf.keras.optimizers.AdamW(learning_rate=self.learning_rate,weight_decay=weight_decay)
+
     if restore_path is None:
-      self.model = build_model(nb_features,nb_units_per_layer, nb_layers, dropout_rate)
-      self.model_dir = model_dir
-      self.model.compile(
-    optimizer=self.optimizer,
-    loss=self.loss_object,
-    loss_weights=None,
-    metrics=["accuracy","precision","recall","binary_crossentropy"],
-    weighted_metrics=None,
-    run_eagerly=False,
-    steps_per_execution=1,
-    jit_compile='auto',
-    auto_scale_loss=True
+          self.model = build_model(nb_features,nb_units_per_layer, nb_layers, dropout_rate)
+          self.model_dir = model_dir
+          self.model.compile(
+        optimizer=self.optimizer,
+        loss=self.loss_object,
+        loss_weights=None,
+        metrics=["accuracy","precision","recall","binary_crossentropy"],
+        weighted_metrics=None,
+        run_eagerly=False,
+        steps_per_execution=1,
+        jit_compile='auto',
+        auto_scale_loss=True
 )
     else:
-      self.model_dir = restore_path
-      # Load the optimizer weights
-      opt_weights = np.load(osp(self.model_dir,'optimizer.npy'), allow_pickle=True)
-      grad_vars = self.model.trainable_weights
-      # This need not be model.trainable_weights; it must be a correctly-ordered list of
-      # grad_vars corresponding to how you usually call the optimizer.
-      zero_grads = [tf.zeros_like(w) for w in grad_vars]
-      # Apply gradients which don't do nothing with Adam
-      self.optimizer.apply_gradients(zip(zero_grads, grad_vars))
-      # Set the weights of the optimizer
-      self.optimizer.set_weights(opt_weights)
-      self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
+          self.model_dir = restore_path
+          # Load the optimizer weights
+          opt_weights = np.load(osp(self.model_dir,'optimizer.npy'), allow_pickle=True)
+          grad_vars = self.model.trainable_weights
+          # This need not be model.trainable_weights; it must be a correctly-ordered list of
+          # grad_vars corresponding to how you usually call the optimizer.
+          zero_grads = [tf.zeros_like(w) for w in grad_vars]
+          # Apply gradients which don't do nothing with Adam
+          self.optimizer.apply_gradients(zip(zero_grads, grad_vars))
+          # Set the weights of the optimizer
+          self.optimizer.set_weights(opt_weights)
+          self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
 
 
 

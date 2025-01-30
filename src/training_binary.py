@@ -233,14 +233,16 @@ def training(restore_path = None,debugging=False):
     dropout_rate = 0.0
     label_smoothing = 0.1
     loss_name = "binary_crossentropy"
-    main_data_dir = r"C:\Data\PhD\palimpsest\Victor_data"
-    palimpsest_dir = r"Paris_Coislin"
+    main_data_dir = r"/projects/palimpsests"
+    palimpsest_dir = r"Verona_msXL"
     base_data_dir = osp(main_data_dir,palimpsest_dir)
-    folios = [r"Par_coislin_393_054r"]
+    folios = ["msXL_344v_b","msXL_344r_b","msXL_335v_b","msXL_335r_b","msXL_334v_b","msXL_334r_b","msXL_323v_b",
+              "msXL_323r_b","msXL_322v_b","msXL_322r_b","msXL_319v_b","msXL_319r_b","msXL_318v_b","msXL_318r_b",
+              "msXL_315v_b","msXL_315r_b"]
     ut_mask_file = r"undertext_cleaned_10nn_ot_sub_black"
     nonut_mask_file = r"bg_lines_ot_subtracted_black"
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    model_dir = os.path.join(r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training",palimpsest_dir, current_time)
+    model_dir = os.path.join(r"/projects/palimp/training",palimpsest_dir, current_time)
     learning_rate_decay_epoch_step = 0
     class_balansing_factor = 0.175
     #Early stopping parametrs
