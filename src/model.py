@@ -1,8 +1,8 @@
 import tensorflow as tf
-from tensorflow import keras
-from keras import Model
-from keras.saving import register_keras_serializable
-from keras.layers import Dense, Dropout, BatchNormalization, ReLU
+#from tensorflow import keras
+from tensorflow.keras import Model
+from tensorflow.keras.saving import register_keras_serializable
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, ReLU
 from tensorflow.python.distribute.device_util import current
 
 
