@@ -71,17 +71,29 @@ def read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box=None):
 
 def read_subset_features(main_dir,folio_name,class_name,modality,box=None):
     """
-    Reads a subset of features from an MSI image.
+    Reads subset of features from a given MSI (Mass Spectrometry Imaging) image dataset.
 
-    Arguments:
-     main_dir (str): The main directory containing the image data.
-     folio_name (str): The name of the folio where the image is located.
-     class_name (str): The class name to filter the coordinates.
-     modality (str): The imaging modality used.
-     box (Optional[object]): Optional bounding box to specify a subset region.
+    Parameters:
+    main_dir: str
+        The main directory path containing the dataset.
+    folio_name: str
+        The name of the folio or folder containing specific image files.
+    class_name: str
+        The name of the classification or label associated with the data.
+    modality: str
+        The imaging modality name (e.g., intensity or ion mode).
+    box: Optional[tuple], default=None
+        A bounding box defined by top-left and bottom-right coordinates to restrict the area of interest. If None, the entire region is considered.
 
     Returns:
-     tuple: A tuple containing features, x coordinates and y coordinates.
+    tuple
+        A tuple containing:
+            - features: list
+                Extracted features from the specified coordinates in the image.
+            - xs: list
+                X-coordinates of the extracted points.
+            - ys: list
+                Y-coordinates of the extracted points.
     """
     im_pil_ob = read_msi_image_object(main_dir,folio_name,modality)
     xs,ys = read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box)

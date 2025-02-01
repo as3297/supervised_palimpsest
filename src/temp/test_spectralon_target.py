@@ -4,30 +4,25 @@ import matplotlib.pyplot as plt
 matplotlib.use("TkAgg")  # Use any supported interactive backend, e.g., TkAgg or Qt5Agg
 import numpy as np
 from read_data import read_subset_features,read_msi_image_object
-from msi_data_as_array import FragmentfromMSI_PIL
+from msi_data_as_array import FragmentfromMSI_PIL,NormalizingGray
 
+# Display spectralon target for every band
 # Load non-undertext and undertext masks
 main_dir = r"d:\Verona_msXL"
 folio_names = ["msXL_315r_b",
 "msXL_315v_b",
 "msXL_318r_b",
 "msXL_318v_b",
-"msXL_319r_b",
-"msXL_319v_b",
-"msXL_322r_b",
-"msXL_322v_b",
-"msXL_323r_b",
-"msXL_323v_b",
-"msXL_334r_b",
-"msXL_334v_b",
-"msXL_335r_b",
-"msXL_335v_b",
-"msXL_344r_b",
-"msXL_344v_b"]
+"msXL_319r_b","msXL_319v_b","msXL_322r_b","msXL_322v_b",
+"msXL_323r_b","msXL_323v_b","msXL_334r_b","msXL_334v_b",
+"msXL_335r_b","msXL_335v_b","msXL_344r_b","msXL_344v_b"]
 modality = "M"
 for folio_name in folio_names:
+    print(folio_name)
     im_obj = read_msi_image_object(main_dir,folio_name,modality)
-    box = [2500,3000,3200,3300]
+    scoords = NormalizingGray(im_obj).spectralon_coords
+    scoords = np.stack(scoords)
+    box = [np.min(scoords[:,0])-100,np.min(scoords[:,1])-100,np.max(scoords[:,0])+100,np.max(scoords[:,1])+100]
     fragment = FragmentfromMSI_PIL(im_obj,box).ims_img
     nb_bands = fragment.shape[-1]
     fig,ax = plt.subplots(nb_bands//2,2)

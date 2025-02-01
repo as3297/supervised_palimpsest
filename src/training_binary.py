@@ -5,7 +5,7 @@ import tensorflow as tf
 from model import build_model
 print("TensorFlow version:", tf.__version__)
 from util import extend_json, save_json
-from dataset import add_classes_in_split, shuffle_between_epoch, load_data_for_training, resample_nb_dataset_points
+from dataset import add_classes_in_split, shuffle_between_epoch,load_data_for_training_page_section, load_data_for_training, resample_nb_dataset_points
 from datetime import datetime
 import os
 #from tf.keras.losses import get_regularization_loss

@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 osp = os.path.join
 
 
-def load_data_for_training(model_path: str, modalities: list, base_data_dir,folios,ut_mask_file,nonut_mask_file, debugging=False):
+def load_data_for_training_page_section(model_path: str, modalities: list, base_data_dir,folios,ut_mask_file,nonut_mask_file, debugging=False):
     """
     Load features and labels from multiple folios
     """
@@ -39,7 +39,6 @@ def load_data_for_training(model_path: str, modalities: list, base_data_dir,foli
         if len(model_path)>0:
             save_data_parameters(model_path, modalities, bbox_dicts, folios,ut_mask_file,nonut_mask_file)
     return dataset["train_ut"],dataset["train_nonut"],dataset["val_ut"],dataset["val_nonut"]
-
 
 def save_data_parameters(save_path, modalities: list, bbox_dicts: list, folios: list, ut_mask_file, nonut_mask_file):
     d = {}

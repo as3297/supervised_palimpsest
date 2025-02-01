@@ -140,10 +140,30 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
 class PointsfromMSI_PIL(DataFromPILImageCube):
     def __init__(self,pil_msi_obj: ImageCubePILobject,points_coord):
         """
-        read points from image
-        :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
-        :param points_coords: list of coordinates
+        Initializes the class with the provided hyperspectral image object and points coordinates.
+
+        Parameters:
+        pil_msi_obj : ImageCubePILobject
+            The input hyperspectral image object.
+
+        points_coord : list or array-like
+            The coordinates of points in the image.
+
+        Attributes:
+        pil_msi_obj : PointsWindow
+            Creates a PointsWindow object using the provided hyperspectral image and point coordinates.
+
+        points_coord : list or array-like
+            Stores the original input points coordinates.
+
+        unstretch_ims_img : NoneType
+            Placeholder for the unstretched image data, initialized as None.
+
+        unstretch_points : ndarray
+            Converts the point coordinates from PIL representation to a NumPy array.
+
+        points : ndarray (number of points, number of bands)
+            Standardized and transposed version of the points coordinates.
         """
         super().__init__(pil_msi_obj)
         self.points_coord = points_coord

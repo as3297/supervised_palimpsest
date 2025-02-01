@@ -20,7 +20,7 @@ class ClassCoord:
         :return:
         coords: [[row_0,col_0],...,[row_i,col_i]]
         """
-        with Image.open(self.fpath) as im:
+        with Image.open(self.fpath).convert('L') as im:
             if self.rotate_angle > 0:
                 rotation = eval("Image.ROTATE_{}".format(self.rotate_angle))
                 im = im.transpose(rotation)

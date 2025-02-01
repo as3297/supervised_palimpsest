@@ -1,19 +1,12 @@
-from cProfile import label
-
 import numpy as np
 import tensorflow as tf
-
-from label_noise_clean import knn_clean_ut
-from model import FCModel,build_model
-print("TensorFlow version:", tf.__version__)
+from model import build_model
 from util import extend_json, save_json
-from dataset import add_classes_in_split, shuffle_between_epoch, load_data_for_training, resample_nb_dataset_points
 from datetime import datetime
 import os
-from dataset_tf import create_oversampled_dataset
-#from tf.keras.losses import get_regularization_loss
+from dataset_efficient import dataset
+
 osp = os.path.join
-#tf.compat.v1.disable_eager_execution()
 
 
 class PalGraph():
@@ -91,7 +84,6 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["model_dir"] = gr.model_dir
   d["label_smoothing"] = gr.loss_object.label_smoothing
   d["loss"] = gr.loss_object.name
-
   d["weight_decay"] = gr.optimizer.get_config()["weight_decay"]
   d["dropout_rate"] = dropout_rate
   save_path = osp(gr.model_dir,"training_parameters.json")
@@ -100,11 +92,11 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   else:
     extend_json(save_path, d)
 
-def save_dataset_par(train_folios,val_folios,model_dir,filter_ut_with_knn):
+def save_dataset_par(train_folios,val_folios,model_dir,classes_dict):
     d = {}
     d["train_folios"] = train_folios
     d["val_folios"] = val_folios
-    d["filter_ut_with_knn"] = True
+    d["classes_dict"] = classes_dict
     save_path = osp(model_dir, "dataset_parameters.json")
     if not os.path.exists(save_path):
         save_json(save_path, d)
@@ -133,28 +125,26 @@ def training(restore_path = None,debugging=False):
     dropout_rate = 0.0
     label_smoothing = 0.1
     loss_name = "binary_crossentropy"
-    palimpsest_dir = r"D:\Verona_msXL"
+
+    main_data_dir = r"D:"
     palimpsest_name = r"Verona_msXL"
-    filter_ut_with_knn = False
-    folios_train = [r"msXL_315v_b"
-    ,"msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",]
+    base_data_dir = osp(main_data_dir, palimpsest_name)
+    folios_train = ["msXL_335v_b",]
+    #r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",]
     #"msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
-    #"msXL_334v_b","msXL_335v_b","msXL_344r_b","msXL_344v_b"]
+    #"msXL_334v_b","msXL_344r_b","msXL_344v_b"]
     folios_val = [r"msXL_315r_b"]
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     model_dir = os.path.join(r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training",palimpsest_name, current_time)
     learning_rate_decay_epoch_step = 0
+    classes_dict = {"undertext":1,"not_undertext":0}
     #Early stopping parametrs
     patience = 15
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    save_dataset_par(folios_train,folios_val,model_dir,filter_ut_with_knn)
-    dataset_train = create_oversampled_dataset(batch_size,folios_train,palimpsest_dir,modalities,shuffle=True,filter_label_noise=filter_ut_with_knn,test_on_subset=debugging)
-    dataset_val = create_oversampled_dataset(batch_size,folios_val,palimpsest_dir,modalities,shuffle=False,filter_label_noise=False,test_on_subset=debugging)
-
-    #extract one batch to get features dimensionality
-    for sample in dataset_train.take(1):
-        nb_features = sample[0].shape[-1]
+    save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
+    dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities)
+    nb_features = dataset_train[0].shape[-1]
 
     print("nb_features",nb_features)
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
@@ -169,14 +159,14 @@ def training(restore_path = None,debugging=False):
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     #create the Early Stopping callback
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
-    history = gr.model.fit(dataset_train,validation_data = dataset_val, validation_split=0.2, epochs=EPOCHS, batch_size=batch_size,callbacks=[tensorboard_callback,earlystopping_callback])
-    #gr.model.save(os.path.join(gr.model_dir, "model.keras"))
+    history = gr.model.fit(dataset_train[0], dataset_train[1],
+    epochs = EPOCHS,
+    callbacks = [tensorboard_callback,earlystopping_callback],
+    validation_data = (dataset_validation[0], dataset_validation[1]),)
 
-def testing(saved_model_path):
-    # val 344r
-    #test msXL_323v_b,msXL_335r_b
-  imported = tf.saved_model.load(saved_model_path)
-  pass
+    gr.model.save(os.path.join(gr.model_dir, "model.keras"))
+
+
 
 if __name__=="__main__":
   training(None,False)
