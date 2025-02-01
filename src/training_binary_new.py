@@ -22,7 +22,6 @@ class PalGraph():
       self.loss_object = tf.keras.losses.BinaryCrossentropy(
           from_logits=False,
           label_smoothing=label_smoothing,
-          axis=-1,
           reduction='sum_over_batch_size',
           name='binary_crossentropy'
       )
