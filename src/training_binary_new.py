@@ -30,9 +30,6 @@ class PalGraph():
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
     elif optimizer_name == "sgd":
         self.optimizer = tf.keras.optimizers.SGD(learning_rate= self.learning_rate)
-    elif optimizer_name == "adamw":
-        #adam with weight decay
-        self.optimizer = tf.keras.optimizers.AdamW(learning_rate=self.learning_rate,weight_decay=weight_decay)
 
     if restore_path is None:
           self.model = build_model(nb_features,nb_units_per_layer, nb_layers, dropout_rate)
@@ -118,8 +115,7 @@ def training(restore_path = None,debugging=False):
     modalities = ["M"]
     nb_nodes_in_layer = 256
     nb_layers = 4
-    optimizer_name = "adamw"
-    weight_decay = 0.0
+    optimizer_name = "adam"
     learning_rate = 0.000001
     dropout_rate = 0.0
     label_smoothing = 0.1
@@ -128,9 +124,9 @@ def training(restore_path = None,debugging=False):
     main_data_dir = r"/projects/palimpsests"
     palimpsest_name = r"Verona_msXL"
     base_data_dir = osp(main_data_dir, palimpsest_name)
-    folios_train = ["msXL_335v_b",r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
-    "msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
-    "msXL_334v_b","msXL_344r_b","msXL_344v_b"]
+    folios_train = ["msXL_335v_b"]#,r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
+    #"msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
+    #"msXL_334v_b","msXL_344r_b","msXL_344v_b"]
     folios_val = [r"msXL_315r_b"]
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     model_dir = os.path.join(r"/projects/supervised_palimpsest/training",palimpsest_name, current_time)
@@ -147,7 +143,7 @@ def training(restore_path = None,debugging=False):
     print("nb_features",nb_features)
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
-                  weight_decay,dropout_rate,learning_rate)
+                  dropout_rate,learning_rate)
     #save model hyperparametrs
     save_training_parameters(gr, debugging, batch_size, EPOCHS,nb_features,
                            learning_rate_decay_epoch_step,dropout_rate)
