@@ -11,8 +11,7 @@ osp = os.path.join
 
 class PalGraph():
   def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,
-               optimizer_name,label_smoothing,loss,
-               weight_decay,dropout_rate,learning_rate):
+               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate):
     # Create an instance of the model
     self.nb_units_per_layer = nb_units_per_layer
     self.nb_layers = nb_layers
