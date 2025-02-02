@@ -37,7 +37,7 @@ class PalGraph():
         optimizer=self.optimizer,
         loss=self.loss_object,
         loss_weights=None,
-        metrics=["accuracy",tf.keras.metrics.Precision()],
+        metrics=["accuracy"],
         weighted_metrics=None,
         run_eagerly=False,
         steps_per_execution=1,
