@@ -124,9 +124,9 @@ def training(restore_path = None,debugging=False):
     main_data_dir = r"/projects/palimpsests"
     palimpsest_name = r"Verona_msXL"
     base_data_dir = osp(main_data_dir, palimpsest_name)
-    folios_train = ["msXL_335v_b"]#,r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
-    #"msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
-    #"msXL_334v_b","msXL_344r_b","msXL_344v_b"]
+    folios_train = ["msXL_335v_b",r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
+    "msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
+    "msXL_334v_b","msXL_344r_b","msXL_344v_b"]
     folios_val = [r"msXL_315r_b"]
     current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
     model_dir = os.path.join(r"/projects/supervised_palimpsest/training",palimpsest_name, current_time)
