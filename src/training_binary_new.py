@@ -37,7 +37,7 @@ class PalGraph():
         optimizer=self.optimizer,
         loss=self.loss_object,
         loss_weights=None,
-        metrics=["accuracy"],
+        metrics=["accuracy","precision"],
         weighted_metrics=None,
         run_eagerly=False,
         steps_per_execution=1,
@@ -116,7 +116,7 @@ def training(restore_path = None,debugging=False):
     nb_nodes_in_layer = 256
     nb_layers = 4
     optimizer_name = "adam"
-    learning_rate = 0.000001
+    learning_rate = 0.00001
     dropout_rate = 0.0
     label_smoothing = 0.1
     weight_decay = 0.0
