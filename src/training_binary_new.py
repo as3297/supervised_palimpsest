@@ -38,11 +38,6 @@ class PalGraph():
         loss=self.loss_object,
         loss_weights=None,
         metrics=["accuracy","precision"],
-        weighted_metrics=None,
-        run_eagerly=False,
-        steps_per_execution=1,
-        jit_compile='auto',
-        auto_scale_loss=True
 )
     else:
           self.model_dir = restore_path
