@@ -104,7 +104,7 @@ def save_dataset_par(train_folios,val_folios,model_dir,classes_dict):
 def training(
             current_time=datetime.now().strftime("%Y%m%d-%H%M%S"),
             model_dir=r"/projects/supervised_palimpsest/training",
-            EPOCHS=500,
+            epochs=500,
             batch_size=32 * 4,
             modalities=["M"],
             nb_nodes_in_layer=256,
@@ -177,7 +177,7 @@ def training(
                 label_smoothing,loss_name,
                   dropout_rate,learning_rate)
     #save model hyperparametrs
-    save_training_parameters(gr, debugging, batch_size, EPOCHS,nb_features,
+    save_training_parameters(gr, debugging, batch_size, epochs,nb_features,
                            learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay)
     # same label distribution as in the train set
     log_dir = os.path.join(model_dir,'logs')
@@ -186,7 +186,7 @@ def training(
     #create the Early Stopping callback
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
     history = gr.model.fit(dataset_train[0], dataset_train[1],
-    epochs = EPOCHS,
+    epochs = epochs,
     callbacks = [tensorboard_callback,earlystopping_callback],
     validation_data = (dataset_validation[0], dataset_validation[1]),)
 

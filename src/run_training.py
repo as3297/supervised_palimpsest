@@ -1,5 +1,7 @@
 import argparse
 from training_binary_new import training
+import json
+import os
 
 def run_training():
 
@@ -20,45 +22,28 @@ def run_training():
     parser.add_argument('--label_smoothing', type=float, default=0.1, help='Label smoothing value')
     parser.add_argument('--weight_decay', "-wdecay", type=float, default=0.0, help='Weight decay value')
     parser.add_argument('--loss_name', "-loss",type=str, default="binary_crossentropy", help='Loss function name')
-    parser.add_argument('--main_data_dir',"-datadir", type=str, default=r"/projects/palimpsests", help='Main data directory path')
+    parser.add_argument('--main_data_dir',"-datadir", type=str, default=r"D:", help='Main data directory path')
     parser.add_argument('--palimpsest_name', "-pname", type=str, default=r"Verona_msXL", help='Palimpsest name')
-    parser.add_argument('--folios_train',"-ftrain", nargs='+', default=["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b",
-                                                              "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
-                                                              "msXL_322r_b", "msXL_322v_b", "msXL_323r_b",
-                                                              "msXL_334r_b", "msXL_334v_b", "msXL_344r_b",
-                                                              "msXL_344v_b"],
+    parser.add_argument('--folios_train',"-ftrain", nargs='+', default=["msXL_335v_b"],
                         help='List of training folios')
     parser.add_argument('--folios_val',"-fval", nargs='+', default=[r"msXL_315r_b"], help='List of validation folios')
 
-    parser.add_argument('--model_dir',"-mdir", type=str, default=None, help='Palimpsest model parent directory')
+    parser.add_argument('--model_dir',"-mdir", type=str, default=r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", help='Palimpsest model parent directory')
     parser.add_argument('--learning_rate_decay_epoch_step', type=int, default=0, help='Learning rate decay step')
-    parser.add_argument('--classes_dict', type=dict, default={"undertext": 1, "not_undertext": 0},
+    parser.add_argument('--classes_dict', type=str, default='{"undertext": 1, "not_undertext": 0}',
                         help='Classes dictionary')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience parameter')
 
     args = parser.parse_args()
-
-
-
+    # Validate and normalize paths
+    args.model_dir = os.path.normpath(args.model_dir)
+    # Convert the JSON string to a Python dictionary
+    classes_dict = json.loads(args.classes_dict)
+    args.classes_dict = classes_dict
     # Pass all parsed arguments to the training function as keyword arguments
-    training(
-        epochs=args.EPOCHS,
-        batch_size=args.batch_size,
-        modalities=args.modalities,
-        nb_nodes_in_layer=args.nb_nodes_in_layer,
-        nb_layers=args.nb_layers,
-        optimizer_name=args.optimizer_name,
-        learning_rate=args.learning_rate,
-        dropout_rate=args.dropout_rate,
-        label_smoothing=args.label_smoothing,
-        weight_decay=args.weight_decay,
-        loss_name=args.loss_name,
-        main_data_dir=args.main_data_dir,
-        palimpsest_name=args.palimpsest_name,
-        folios_train=args.folios_train,
-        folios_val=args.folios_val,
-        model_dir=args.model_dir,
-        learning_rate_decay_epoch_step=args.learning_rate_decay_epoch_step,
-        classes_dict=args.classes_dict,
-        patience=args.patience
-    )
+    for key, value in args.__dict__.items():
+        print(key, value, type(value))
+    training(**args.__dict__)
+
+if __name__ == "__main__":
+    run_training()
