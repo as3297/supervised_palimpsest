@@ -39,7 +39,33 @@ class NormalizingGray():
 
 
 class DataFromPILImageCube():
-    """Class for reading data from Pil MSI image"""
+    """
+    DataFromPILImageCube is a parent class that provides functionalities
+     for processing and standardizing multispectral images
+      represented by a PIL-based ImageCubePIL object.
+
+    Methods:
+
+    __init__(self, pil_msi_obj:ImageCubePILobject):
+        Initializes the DataFromPILImageCube instance.
+        Parameters:
+        - pil_msi_obj: An instance of ImageCubePILobject that contains the multispectral image data.
+        Sets the maximum values for normalization by initializing a NormalizingGray object.
+
+    standartize(self, msi_img):
+        Standardizes each band of the given multispectral image.
+        Iterates over the bands of the image and standardizes them using the pre-computed maximum values.
+        Parameters:
+        - msi_img: The multispectral image as a numpy array.
+        Returns the standardized multispectral image.
+
+    convert_pil_to_array(self, pil_msi_obj):
+        Converts a PIL-based multispectral image object into a numpy array.
+        Parameters:
+        - pil_msi_obj: An instance of ImageCubePILobject containing the PIL representation of the multispectral image.
+        Returns the multispectral image as a numpy array.
+
+    """
     def __init__(self, pil_msi_obj:ImageCubePILobject):
         self.pil_msi_obj = pil_msi_obj
         norm_val_ob = NormalizingGray(self.pil_msi_obj)

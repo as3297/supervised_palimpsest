@@ -100,40 +100,72 @@ def save_dataset_par(train_folios,val_folios,model_dir,classes_dict):
         extend_json(save_path, d)
 
 
-def training(restore_path = None,debugging=False):
-    """
-    Trains a machine learning model. Optionally, the training process can be continued from a previous checkpoint and debugging information can be enabled.
 
-    Arguments:
-    restore_path : str or None
-        Path to the previously saved model checkpoint from which to continue training. If None, training starts from scratch.
-    debugging : bool
-        Flag to enable or disable debugging information during the training process. Default is False.
+def training(
+            current_time=datetime.now().strftime("%Y%m%d-%H%M%S"),
+            model_dir=r"/projects/supervised_palimpsest/training",
+            EPOCHS=500,
+            batch_size=32 * 4,
+            modalities=["M"],
+            nb_nodes_in_layer=256,
+            nb_layers=4,
+            optimizer_name="adam",
+            learning_rate=0.00001,
+            dropout_rate=0.0,
+            label_smoothing=0.1,
+            weight_decay=0.0,
+            loss_name="binary_crossentropy",
+            main_data_dir=r"/projects/palimpsests",
+            palimpsest_name=r"Verona_msXL",
+            folios_train=["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+                          "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b",
+                          "msXL_344v_b"],
+            folios_val=[r"msXL_315r_b"],
+            learning_rate_decay_epoch_step=0,
+            patience=15,
+            classes_dict={"undertext": 1, "not_undertext": 0},            restore_path=None,
+            debugging=False):
     """
-    EPOCHS = 500
-    batch_size = 32*4
-    modalities = ["M"]
-    nb_nodes_in_layer = 256
-    nb_layers = 4
-    optimizer_name = "adam"
-    learning_rate = 0.00001
-    dropout_rate = 0.0
-    label_smoothing = 0.1
-    weight_decay = 0.0
-    loss_name = "binary_crossentropy"
-    main_data_dir = r"/projects/palimpsests"
-    palimpsest_name = r"Verona_msXL"
+    Trains a machine learning model on a specified dataset using given hyperparameters
+    and saves the trained model to a specified directory.
+
+    Parameters:
+        current_time (str): Timestamp used for naming directories, defaults to current time.
+        model_dir (str): Directory path where the trained model and logs will be saved.
+        EPOCHS (int): Number of training epochs.
+        batch_size (int): Batch size for training.
+        modalities (list): List of data modalities to be used in the dataset.
+        nb_nodes_in_layer (int): Number of nodes in each layer of the model.
+        nb_layers (int): Number of layers in the model architecture.
+        optimizer_name (str): Name of the optimizer to be used for training.
+        learning_rate (float): Learning rate for the optimizer.
+        dropout_rate (float): Dropout rate used in the model to prevent overfitting.
+        label_smoothing (float): Smoothing parameter for labels during computation of loss.
+        weight_decay (float): Weight decay parameter to regularize the model during training.
+        loss_name (str): Loss function name to be used during training.
+        main_data_dir (str): Path to the main directory containing the data.
+        palimpsest_name (str): Name of the specific dataset being used for training.
+        folios_train (list): List of training dataset folios.
+        folios_val (list): List of validation dataset folios.
+        learning_rate_decay_epoch_step (int): Step size for learning rate decay.
+        patience (int): Number of epochs with no improvement to wait before early stopping.
+        classes_dict (dict): Mapping of class names to corresponding numerical target values.
+        restore_path (str or None): Path to restore a pre-trained model, if available.
+        debugging (bool): Flag for enabling debugging mode during training.
+
+    Raises:
+        ValueError: If directories cannot be created or data cannot be loaded.
+
+    Functionality:
+        - Organizes the data into training and validation datasets.
+        - Initializes and configures the graph-based model with specified hyperparameters.
+        - Saves training and model-related parameters.
+        - Configures callbacks for TensorBoard logging and early stopping.
+        - Trains the model using the specified training data for the defined epochs.
+        - Saves the trained model to the file system.
+    """
     base_data_dir = osp(main_data_dir, palimpsest_name)
-    folios_train = ["msXL_335v_b",r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
-    "msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
-    "msXL_334v_b","msXL_344r_b","msXL_344v_b"]
-    folios_val = [r"msXL_315r_b"]
-    current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    model_dir = os.path.join(r"/projects/supervised_palimpsest/training",palimpsest_name, current_time)
-    learning_rate_decay_epoch_step = 0
-    classes_dict = {"undertext":1,"not_undertext":0}
-    #Early stopping parametrs
-    patience = 15
+    model_dir = os.path.join(model_dir, palimpsest_name, current_time)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
