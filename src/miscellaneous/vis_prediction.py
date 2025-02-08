@@ -16,7 +16,7 @@ folio_names = ["msXL_335v_b",r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_31
     "msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
     "msXL_334v_b","msXL_344r_b","msXL_344v_b",r"msXL_315r_b"]
 modality = "M"
-trial_name ="20250202-025100"
+trial_name ="20250207-133654"
 box = None
 main_dir = r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 

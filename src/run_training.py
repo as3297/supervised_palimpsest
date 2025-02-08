@@ -2,11 +2,11 @@ import argparse
 from training_binary_new import training
 import json
 import os
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def run_training():
-
-
-
     parser = argparse.ArgumentParser(
                         prog='Run training',
                         description='Trains supervised NN algorithm for palimpsest ink detection',
