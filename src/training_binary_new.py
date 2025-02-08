@@ -67,16 +67,16 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["nb_epochs"] = nb_epochs
   d["nb_layers"] = gr.nb_layers
   d["optimizer"] = gr.optimizer.get_config()
-  d["learning_rate"] = gr.learning_rate
+  d["learning_rate"] = float(gr.learning_rate)
   d["loss_function"] = gr.loss_object.get_config()
   d["nb_units_per_layer"] = gr.nb_units_per_layer
   d["nb_features"] = nb_features
   d["learning_rate_decay_epoch_step"] = learning_rate_decay_epoch_step
   d["model_dir"] = gr.model_dir
-  d["label_smoothing"] = label_smoothing
+  d["label_smoothing"] = float(label_smoothing)
   d["loss"] = gr.loss_object.name
-  d["weight_decay"] = weight_decay
-  d["dropout_rate"] = dropout_rate
+  d["weight_decay"] = float(weight_decay)
+  d["dropout_rate"] = float(dropout_rate)
   save_path = osp(gr.model_dir,"training_parameters.json")
   if not os.path.exists(save_path):
      save_json(save_path, d)
