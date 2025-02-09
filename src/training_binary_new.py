@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from model import build_model
-from util import extend_json, save_json
+from util import extend_json, save_json, convert_float_in_dict
 from datetime import datetime
 import os
 from dataset_efficient import dataset
@@ -66,9 +66,9 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["batch_size"] = batch_size
   d["nb_epochs"] = nb_epochs
   d["nb_layers"] = gr.nb_layers
-  d["optimizer"] = gr.optimizer.get_config()
+  d["optimizer"] = convert_float_in_dict(gr.optimizer.get_config())
   d["learning_rate"] = float(gr.learning_rate)
-  d["loss_function"] = gr.loss_object.get_config()
+  d["loss_function"] = convert_float_in_dict(gr.loss_object.get_config())
   d["nb_units_per_layer"] = gr.nb_units_per_layer
   d["nb_features"] = nb_features
   d["learning_rate_decay_epoch_step"] = learning_rate_decay_epoch_step

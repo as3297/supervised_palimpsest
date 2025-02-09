@@ -1,5 +1,6 @@
 import json
 import numpy as np
+from decimal import Decimal
 
 
 def save_json(fpath,d):
@@ -104,3 +105,42 @@ def read_split_box_coord(split_name,d_bboxs):
     if len(bbox)==0:
         raise IOError("Split name \"{}\" does not correspond any of the box names \"{}\"".format(split_name,d_bboxs.keys()))
     return bbox
+
+def is_decimal_string(value):
+    """
+    Determines if a given value can be interpreted as a decimal number.
+
+    This function attempts to convert the provided value into a decimal.Decimal object. If the conversion is successful, the function returns True, indicating that the input can be interpreted as a decimal number. If the conversion raises an exception, the function returns False.
+
+    Parameters:
+    value: The input value to check.
+
+    Returns:
+    bool: True if the value can be converted to a decimal.Decimal, otherwise False.
+    """
+    try:
+        Decimal(value)  # Attempt to convert to Decimal
+        return True
+    except:
+        return False
+
+def convert_float_in_dict(dict):
+    """
+    Converts string representations of decimal numbers in a dictionary to float.
+
+    This function iterates over all key-value pairs in the input dictionary.
+    If a value is a string and can be interpreted as a decimal number, it will
+    convert that string into a float and update the dictionary in-place.
+
+    Parameters:
+    dict (dict): A dictionary containing key-value pairs where some values may
+                 be strings representing decimal numbers.
+
+    Returns:
+    dict: The modified dictionary with all decimal strings converted to floats.
+    """
+    for key, value in dict.items():
+        if is_decimal_string(value):
+            dict[key] = float(value)
+    return dict
+
