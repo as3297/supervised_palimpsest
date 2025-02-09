@@ -52,7 +52,7 @@ def resampling_with_repeated_enn(features,labels, targeted_classes):
     - The sample indices selected after applying the RepeatedENN algorithm.
     - The resampled labels after noise removal.
     """
-    enn = RepeatedEditedNearestNeighbours(sampling_strategy=targeted_classes,kind_sel="all",n_jobs=-1)
+    enn = RepeatedEditedNearestNeighbours(sampling_strategy=targeted_classes,kind_sel="all",n_jobs=-1,max_iter=100)
     features_clean, labels_clean = enn.fit_resample(features, labels)
     return enn.sample_indices_, labels_clean
 
@@ -91,7 +91,7 @@ def clean_labels(main_dir, folio_name,modality):
     print("Original dataset,", Counter(labels))
     cleaned_idxs, labels_cleaned = resampling_with_repeated_enn(features,labels,[1])
     print("Cleaned dataset,", Counter(labels_cleaned))
-    save_new_mask(cleaned_idxs,xs,ys,labels_cleaned,im_pil_ob.width,im_pil_ob.height,main_dir,folio_name,folio_name+"-undertext_renn_black.png")
+    save_new_mask(cleaned_idxs,xs,ys,labels,im_pil_ob.width,im_pil_ob.height,main_dir,folio_name,folio_name+"-undertext_renn_black.png")
 
 def save_new_mask(idxs,xs,ys,labels,width,height,main_dir,folio_name,fname):
     coords_ut = [[ys[idx],xs[idx]] for idx in idxs if labels[idx]==1]
@@ -105,7 +105,7 @@ def save_new_mask(idxs,xs,ys,labels,width,height,main_dir,folio_name,fname):
 
 if __name__ == "__main__":
 
-    main_data_dir = "/projects/palimpsests/Verona_msXL"
+    main_data_dir = "/projects/palimpsests/Verona_msXL"#"D:\Verona_msXL" #
     folio_name = r"msXL_335v_b"
     modality = "M"
     folio_names = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
