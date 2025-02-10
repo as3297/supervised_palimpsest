@@ -18,7 +18,7 @@ FOLIOS_TRAIN=("msXL_335v_b") #"msXL_315v_b" "msXL_318r_b" "msXL_318v_b" "msXL_31
 FOLIOS_VAL=("msXL_315r_b")
 MODEL_DIR="/projects/supervised_palimpsest/training" #"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 LEARNING_RATE_DECAY_EPOCH_STEP=0
-CLASSES_DICT='{"undertext":1,"not_undertext":0}'
+CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
 PATIENCE=15
 
 python run_training.py --epochs $EPOCHS \

@@ -30,7 +30,7 @@ def run_training():
 
     parser.add_argument('--model_dir',"-mdir", type=str, default=r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", help='Palimpsest model parent directory')
     parser.add_argument('--learning_rate_decay_epoch_step', type=int, default=0, help='Learning rate decay step')
-    parser.add_argument('--classes_dict', type=str, default='{"undertext": 1, "not_undertext": 0}',
+    parser.add_argument('--classes_dict', type=str, default='{"undertext_renn": 1, "not_undertext": 0}',
                         help='Classes dictionary')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience parameter')
 

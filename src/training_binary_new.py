@@ -118,7 +118,7 @@ def training(
             folios_val=[r"msXL_315r_b"],
             learning_rate_decay_epoch_step=0,
             patience=15,
-            classes_dict={"undertext": 1, "not_undertext": 0},            restore_path=None,
+            classes_dict={"undertext_renn": 1, "not_undertext": 0},            restore_path=None,
             debugging=False):
     """
     Trains a machine learning model on a specified dataset using given hyperparameters
