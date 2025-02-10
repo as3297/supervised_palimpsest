@@ -37,7 +37,7 @@ class PalGraph():
         optimizer=self.optimizer,
         loss=self.loss_object,
         loss_weights=None,
-        metrics=["accuracy","precision"],
+        metrics=["accuracy"],
 )
     else:
           self.model_dir = restore_path
