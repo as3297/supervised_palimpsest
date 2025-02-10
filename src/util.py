@@ -140,7 +140,9 @@ def convert_float_in_dict(dict):
     dict: The modified dictionary with all decimal strings converted to floats.
     """
     for key, value in dict.items():
-        if is_decimal_string(value):
+        if isinstance(value, (str, bool)) or value is None:
+            continue
+        else:
             dict[key] = float(value)
     return dict
 
