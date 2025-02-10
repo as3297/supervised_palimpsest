@@ -54,10 +54,6 @@ class PalGraph():
           self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
 
 
-
-
-
-
 def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step,
                              dropout_rate,label_smoothing,weight_decay):
   d = {}
