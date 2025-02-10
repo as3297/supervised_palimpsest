@@ -12,11 +12,11 @@ import numpy as np
 root_dir = r"d:"
 palimpsest_name = "Verona_msXL"
 main_data_dir = os.path.join(root_dir, palimpsest_name)
-folio_names = ["msXL_335v_b",r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
-    "msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
-    "msXL_334v_b","msXL_344r_b","msXL_344v_b",r"msXL_315r_b"]
+folio_names = ["msXL_335v_b",]#r"msXL_315v_b","msXL_318r_b","msXL_318v_b","msXL_319r_b","msXL_319v_b",
+# "msXL_322r_b","msXL_322v_b","msXL_323r_b","msXL_334r_b",
+# "msXL_334v_b","msXL_344r_b","msXL_344v_b",r"msXL_315r_b"]
 modality = "M"
-trial_name ="20250207-133654"
+trial_name ="20250210-093920"
 box = None
 main_dir = r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 

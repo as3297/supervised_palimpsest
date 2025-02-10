@@ -1,3 +1,5 @@
+from tensorflow.python.ops.gen_clustering_ops import nearest_neighbors
+
 from read_data import read_msi_image_object,read_x_y_coords
 from msi_data_as_array import PointsfromMSI_PIL
 from imblearn.under_sampling import RepeatedEditedNearestNeighbours
@@ -36,7 +38,7 @@ def read_features(im_pil_ob,main_dir,folio_name,class_name):
     features = points_object.points
     return features,xs,ys
 
-def resampling_with_repeated_enn(features,labels, targeted_classes):
+def resampling_with_repeated_enn(features,labels, targeted_classes,max_iter=50,n_jobs=-1,n_neig=4):
     """
     Performs data resampling using the Repeated Edited Nearest Neighbours (RepeatedENN) technique.
 
@@ -52,9 +54,20 @@ def resampling_with_repeated_enn(features,labels, targeted_classes):
     - The sample indices selected after applying the RepeatedENN algorithm.
     - The resampled labels after noise removal.
     """
-    enn = RepeatedEditedNearestNeighbours(sampling_strategy=targeted_classes,kind_sel="all",n_jobs=-1,max_iter=50)
+    enn = RepeatedEditedNearestNeighbours(sampling_strategy=targeted_classes,kind_sel="all",n_jobs=n_jobs,max_iter=max_iter,n_neighbors=n_neig)
     features_clean, labels_clean = enn.fit_resample(features, labels)
     return enn.sample_indices_, labels_clean
+
+def repeated_enn_test():
+    labels = [0,0,1,1,1,1]
+    features = [[1,2],[2,4],[1.1,2.1],[8,8],[9,9],[7,7]]
+    resampled_idxs,labels_clean = resampling_with_repeated_enn(features,labels,[1],max_iter=1,n_neig=2)
+    print(resampled_idxs)
+    print(labels_clean)
+    ys = [1,2,3,4,5,6]
+    xs = [1,2,3,4,5,6]
+    coords_ut = [[ys[idx], xs[idx]] for idx in resampled_idxs if labels[idx] == 1]
+    print(coords_ut)
 
 def clean_labels(main_dir, folio_name,modality):
     """
@@ -105,7 +118,7 @@ def save_new_mask(idxs,xs,ys,labels,width,height,main_dir,folio_name,fname):
 
 
 if __name__ == "__main__":
-
+    repeated_enn_test()
     main_data_dir = "/projects/palimpsests/Verona_msXL" #"D:\Verona_msXL"#
     folio_name = r"msXL_335v_b"
     modality = "M"
