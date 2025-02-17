@@ -96,9 +96,9 @@ def save_prediction_mages(predictions,im_shape,folio_name,saved_model_path,box):
     io.imsave(save_path, predictions_thresh)
 
 if __name__ == "__main__":
-    root_dir = "/projects/palimpsests"#r"d:"
+    root_dir = r"/projects/palimpsests"#r"d:"
     palimpsest_name = "Verona_msXL"
-    main_dir = "r/projects/supervised_palimpsest/training"#r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
+    main_dir = r"/projects/supervised_palimpsest/training"#r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
     model_name = "20250210-235448"
     modality = "M"
     box = None
