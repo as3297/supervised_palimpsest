@@ -7,7 +7,7 @@ MODALITIES=("M")
 NB_NODES_IN_LAYER=512
 NB_LAYERS=4
 OPTIMIZER_NAME="adam"
-LEARNING_RATE=0.00001
+LEARNING_RATE=0.000001
 DROPOUT_RATE=0.0
 LABEL_SMOOTHING=0.1
 WEIGHT_DECAY=0.0
@@ -19,7 +19,7 @@ FOLIOS_VAL=("msXL_344v_b") #("msXL_315r_b")
 MODEL_DIR="/projects/supervised_palimpsest/training" #"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 LEARNING_RATE_DECAY_EPOCH_STEP=0
 CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
-PATIENCE=15
+PATIENCE=35
 
 python run_training.py --epochs $EPOCHS \
   --batch_size $BATCH_SIZE \
