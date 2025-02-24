@@ -55,7 +55,7 @@ class PalGraph():
 
 
 def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step,
-                             dropout_rate,label_smoothing,weight_decay):
+                             dropout_rate,label_smoothing,weight_decay,patience):
   d = {}
   d["restore_path"] = gr.restore_path
   d["debugging"] = debugging
@@ -73,6 +73,7 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["loss"] = gr.loss_object.name
   d["weight_decay"] = float(weight_decay)
   d["dropout_rate"] = float(dropout_rate)
+  d["patience"] = int(patience)
   save_path = osp(gr.model_dir,"training_parameters.json")
   if not os.path.exists(save_path):
      save_json(save_path, d)
@@ -169,7 +170,7 @@ def training(
                   dropout_rate,learning_rate)
     #save model hyperparametrs
     save_training_parameters(gr, debugging, batch_size, epochs,nb_features,
-                           learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay)
+                           learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience)
     # same label distribution as in the train set
     log_dir = os.path.join(model_dir,'logs')
     #create the TensorBoard callback
