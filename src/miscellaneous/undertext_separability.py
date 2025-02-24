@@ -88,7 +88,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     features_page = features_page.astype(np.float32)
     print(f"Done loading page {folio_name} features")
     #process image chunk by chunk to save memory
-    chunk_size = 10000  # Set a reasonable chunk size
+    chunk_size = 100000  # Set a reasonable chunk size
     dist,xs,ys = [],[],[]
     #increase number of pixel if the page of undertext is the same a page of calculated distances
     if folio_name == ut_folio_name:
