@@ -88,7 +88,6 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     xs_ut = xs_ut[:5]
     ys_ut = ys_ut[:5]
     print("Done loading undertext features")
-    dist_dict = {}
     #extract page features
     features_page, xs_page, ys_page = load_page(data_dir,folio_name,modality)
     features_page = features_page.astype(np.float32)[:10,:]
@@ -130,7 +129,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)
     xs = np.take_along_axis(xs, n_nn_idx, axis=1)
     ys = np.take_along_axis(ys, n_nn_idx, axis=1)
-    dist_dict[folio_name] = {"dist":dist,"xs_ut":xs_ut,"ys_ut":ys_ut,"xs":xs,"ys":ys}
+    dist_dict = {"dist":dist,"xs_ut":xs_ut,"ys_ut":ys_ut,"xs":xs,"ys":ys}
     return dist_dict
 
 
@@ -151,11 +150,10 @@ if __name__ == "__main__":
     class_name = "undertext"
     n = 3
     box = None
-    dict_list = []
+    dict = {}
     for folio_ut in folio_names:
         for folio_name in folio_names:
-            dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_name,class_name,modality,n,box=box,)
-            dict_list.append(dict_list)
-        dict_folios = {folio_ut:dict_list}
+            dict_folio = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_name,class_name,modality,n,box=box,)
+            dict[folio_name] = dict_folio
         fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.json")
-        save_json(fpath,dict_folios)
+        save_json(fpath,dict)
