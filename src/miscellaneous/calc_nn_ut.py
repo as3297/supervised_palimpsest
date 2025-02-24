@@ -94,11 +94,30 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     xs_page = xs_page[:10]
     ys_page = ys_page[:10]
     print(f"Done loading page {folio_name} features")
-    #process image chunk by chunk to save memory
-    chunk_size = 100  # Set a reasonable chunk size
     #increase number of pixel if the page of undertext is the same a page of calculated distances
     if folio_name == ut_folio_name:
         n = n+1
+    same_page = False
+    if folio_name == ut_folio_name:
+        same_page = True
+
+    return find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page)
+
+def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page):
+    """
+    :param features_ut: Feature set from the under-text section.
+    :param xs_ut: X-coordinates associated with the under-text features.
+    :param ys_ut: Y-coordinates associated with the under-text features.
+    :param features_page: Feature set from the reference page.
+    :param xs_page: X-coordinates associated with the reference page features.
+    :param ys_page: Y-coordinates associated with the reference page features.
+    :param n: Number of nearest neighbors to retrieve.
+    :param same_page: Boolean flag indicating whether the under-text and reference features are from the same page.
+    :return: Dictionary containing the distances, and corresponding coordinates of the nearest neighbors.
+    """
+    #process image chunk by chunk to save memory
+    chunk_size = 100  # Set a reasonable chunk size
+
     # Split features_page, xs_page, and ys_page into chunks
     chunks = [(features_ut, features_page[i:min(i + chunk_size, len(features_page))],
                xs_page[i:min(i + chunk_size, len(xs_page))],
@@ -121,7 +140,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     ys = np.concatenate(ys, axis=1)
     idx_dist_sorted = np.argsort(dist, axis=1)
     #ignore first neighbour if it is the same folio as undertext's folio
-    if folio_name == ut_folio_name:
+    if same_page:
         n_nn_idx = idx_dist_sorted[:, 1:n]
     else:
         n_nn_idx = idx_dist_sorted[:, 0:n]
@@ -129,7 +148,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)
     xs = np.take_along_axis(xs, n_nn_idx, axis=1)
     ys = np.take_along_axis(ys, n_nn_idx, axis=1)
-    dist_dict = {"dist":dist,"xs_ut":xs_ut,"ys_ut":ys_ut,"xs":xs,"ys":ys}
+    dist_dict = {"dist":dist.tolist(),"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist(),"xs":xs.tolist(),"ys":ys.tolist()}
     return dist_dict
 
 
