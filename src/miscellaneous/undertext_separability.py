@@ -9,6 +9,7 @@ from msi_data_as_array import FullImageFromPILImageCube
 from util import save_json
 from scipy.spatial import distance
 import numpy as np
+from multiprocessing import Pool
 
 def bhattacharyya_coefficient(hist1, hist2):
   """
@@ -65,6 +66,11 @@ def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, neighbo
     ys = np.take_along_axis(ys, n_nn_idx, axis=1)
     return dist,xs,ys  # Returning indices of nearest neighbors
 
+# Helper function for processing chunks in parallel
+def process_chunk(chunk_args):
+    features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n = chunk_args
+    return find_distance_btw_ut_and_folio_frag(features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n)
+
 def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_name,modality,n, box=None,):
     """
     :param data_dir: Directory path where the necessary data files are stored.
@@ -88,18 +94,26 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     features_page = features_page.astype(np.float32)
     print(f"Done loading page {folio_name} features")
     #process image chunk by chunk to save memory
-    chunk_size = 100000  # Set a reasonable chunk size
-    dist,xs,ys = [],[],[]
+    chunk_size = 100  # Set a reasonable chunk size
     #increase number of pixel if the page of undertext is the same a page of calculated distances
     if folio_name == ut_folio_name:
         n = n+1
-    for i in range(0, len(features_page), chunk_size):
-        last_idx = min(i + chunk_size,len(features_page))
-        dist_chunk, xs_chunk, ys_chunk = find_distance_btw_ut_and_folio_frag(features_ut, features_page[i:last_idx],xs_page[i:last_idx],ys_page[i:last_idx], n)
+    # Split features_page, xs_page, and ys_page into chunks
+    chunks = [(features_ut, features_page[i:min(i + chunk_size, len(features_page))],
+               xs_page[i:min(i + chunk_size, len(xs_page))],
+               ys_page[i:min(i + chunk_size, len(ys_page))], n)
+              for i in range(0, len(features_page), chunk_size)]
+
+    # Use multiprocessing for parallel calculation
+    with Pool() as pool:
+        results = pool.map(process_chunk, chunks)
+
+    # Collect results from all chunks
+    dist, xs, ys = [], [], []
+    for dist_chunk, xs_chunk, ys_chunk in results:
         dist.append(dist_chunk)
         xs.append(xs_chunk)
         ys.append(ys_chunk)
-        print(f"Percentage of {len(features_page)/(i+len(features_page))} pixels left")
 
     dist = np.concatenate(dist, axis=1)
     xs = np.concatenate(xs, axis=1)
