@@ -84,14 +84,16 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     """
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
-    features_ut = features_ut.astype(np.float32)
-    xs_ut = xs_ut
-    ys_ut = ys_ut
+    features_ut = features_ut.astype(np.float32)[:5,:]
+    xs_ut = xs_ut[:5]
+    ys_ut = ys_ut[:5]
     print("Done loading undertext features")
     dist_dict = {}
     #extract page features
     features_page, xs_page, ys_page = load_page(data_dir,folio_name,modality)
-    features_page = features_page.astype(np.float32)
+    features_page = features_page.astype(np.float32)[:10,:]
+    xs_page = xs_page[:10]
+    ys_page = ys_page[:10]
     print(f"Done loading page {folio_name} features")
     #process image chunk by chunk to save memory
     chunk_size = 100  # Set a reasonable chunk size
