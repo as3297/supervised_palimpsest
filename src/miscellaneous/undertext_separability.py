@@ -124,7 +124,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
 #color every pixel from this map according to index of
 
 if __name__ == "__main__":
-    
+
     root_dir = r"/projects/palimpsests" #r"D:"
     palimpsest_name = "Verona_msXL"
     main_data_dir = os.path.join(root_dir, palimpsest_name)
@@ -138,8 +138,8 @@ if __name__ == "__main__":
     dict_list = []
     for folio_ut in folio_names:
         for folio_name in folio_names:
-            dict = find_distance_btw_ut_and_folio(main_data_dir,folio_names[0],folio_name,class_name,modality,n,box=box,)
+            dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_name,class_name,modality,n,box=box,)
             dict_list.append(dict_list)
-        dict_folios = {folio_names[0]:dict_list}
-        fpath = os.path.join(main_data_dir,folio_names[0],f"euclid_nn_{n}.json")
+        dict_folios = {folio_ut:dict_list}
+        fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.json")
         save_json(fpath,dict_folios)
