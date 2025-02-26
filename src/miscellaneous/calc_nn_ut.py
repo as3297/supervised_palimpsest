@@ -71,7 +71,7 @@ def process_chunk(chunk_args):
     features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n = chunk_args
     return find_distance_btw_ut_and_folio_frag(features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n)
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_name,modality,n, box=None,):
+def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_name,modality,n_org, box=None,):
     """
     :param data_dir: Directory path where the necessary data files are stored.
     :param ut_folio_name: Name of the undertext folio for which features are being processed.
@@ -84,24 +84,28 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     """
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
-    features_ut = features_ut.astype(np.float32)[:5,:]
-    xs_ut = xs_ut[:5]
-    ys_ut = ys_ut[:5]
+    features_ut = features_ut.astype(np.float32)
+    xs_ut = np.array(xs_ut).astype(np.uint8)
+    ys_ut = np.array(ys_ut).astype(np.uint8)
     print("Done loading undertext features")
     #extract page features
-    features_page, xs_page, ys_page = load_page(data_dir,folio_name,modality)
-    features_page = features_page.astype(np.float32)[:10,:]
-    xs_page = xs_page[:10]
-    ys_page = ys_page[:10]
-    print(f"Done loading page {folio_name} features")
-    #increase number of pixel if the page of undertext is the same a page of calculated distances
-    if folio_name == ut_folio_name:
-        n = n+1
-    same_page = False
-    if folio_name == ut_folio_name:
-        same_page = True
-
-    return find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page)
+    dict ={"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist()}
+    for folio_name in folio_names:
+        features_page, xs_page, ys_page = load_page(data_dir,folio_name,modality)
+        features_page = features_page.astype(np.float32)
+        xs_page = xs_page
+        ys_page = ys_page
+        print(f"Done loading page {folio_name} features")
+        #increase number of pixel if the page of undertext is the same a page of calculated distances
+        if folio_name == ut_folio_name:
+            n = n_org+1
+        else:
+            n = n_org
+        same_page = False
+        if folio_name == ut_folio_name:
+            same_page = True
+        dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page)
+    return dict
 
 def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page):
     """
@@ -148,7 +152,7 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)
     xs = np.take_along_axis(xs, n_nn_idx, axis=1)
     ys = np.take_along_axis(ys, n_nn_idx, axis=1)
-    dist_dict = {"dist":dist.tolist(),"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist(),"xs":xs.tolist(),"ys":ys.tolist()}
+    dist_dict = {"dist":dist.tolist(),"xs":xs.tolist(),"ys":ys.tolist()}
     return dist_dict
 
 
@@ -159,20 +163,15 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
 
 if __name__ == "__main__":
 
-    root_dir = r"/projects/palimpsests" #r"D:"
+    root_dir = r"D:" #r"/projects/palimpsests" #
     palimpsest_name = "Verona_msXL"
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_names = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
-                   "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
-                   "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
+    folio_names = [r"msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
     modality = "M"
     class_name = "undertext"
     n = 3
     box = None
-    dict = {}
     for folio_ut in folio_names:
-        for folio_name in folio_names:
-            dict_folio = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_name,class_name,modality,n,box=box,)
-            dict[folio_name] = dict_folio
+        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,box=box,)
         fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.json")
         save_json(fpath,dict)
