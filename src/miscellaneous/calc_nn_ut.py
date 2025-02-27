@@ -6,7 +6,7 @@ root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(root_dir)
 from read_data import read_msi_image_object, read_subset_features
 from msi_data_as_array import FullImageFromPILImageCube
-from util import save_json
+from util import save_pickle
 from scipy.spatial import distance
 import numpy as np
 from multiprocessing import Pool
@@ -84,9 +84,9 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     """
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
-    features_ut = features_ut.astype(np.float32)[:5]
-    xs_ut = np.array(xs_ut).astype(np.uint8)[:5]
-    ys_ut = np.array(ys_ut).astype(np.uint8)[:5]
+    features_ut = features_ut.astype(np.float32)
+    xs_ut = np.array(xs_ut).astype(np.uint8)
+    ys_ut = np.array(ys_ut).astype(np.uint8)
     print("Done loading undertext features")
     #extract page features
     dict ={"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist()}
@@ -104,7 +104,8 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
         same_page = False
         if folio_name == ut_folio_name:
             same_page = True
-        dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page)
+        #dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page)
+        dict[folio_name] = {}
     return dict
 
 def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page):
@@ -163,7 +164,7 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
 
 if __name__ == "__main__":
 
-    root_dir = r"/projects/palimpsests" #r"D:" #
+    root_dir = r"D:" #r"/projects/palimpsests" #
     palimpsest_name = "Verona_msXL"
     main_data_dir = os.path.join(root_dir, palimpsest_name)
     folio_names = [r"msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
@@ -173,5 +174,5 @@ if __name__ == "__main__":
     box = None
     for folio_ut in folio_names:
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,box=box,)
-        fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.json")
-        save_json(fpath,dict)
+        fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.pkl")
+        save_pickle(fpath,dict)

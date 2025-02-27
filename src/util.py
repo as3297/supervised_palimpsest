@@ -1,7 +1,19 @@
 import json
 import numpy as np
 from decimal import Decimal
+import os
+import pickle
 
+def save_pickle(fpath,data):
+    # Save dictionary to a file
+    with open(fpath, "wb") as file:
+        pickle.dump(data, file)
+
+def read_pickle(fpath):
+    # Load dictionary from a file
+    with open(fpath, "rb") as file:
+        loaded_data = pickle.load(file)
+    return loaded_data
 
 def save_json(fpath,d):
     """
@@ -26,9 +38,31 @@ def extend_json(fpath,d):
         json.dump(d, json_file, indent=4)
 
 def read_json(fpath):
-    with open(fpath, 'r') as json_file:
-        d = json.load(json_file)
-    return d
+    """
+    Reads a JSON file from the given path.
+
+    Parameters:
+    fpath (str): Path to the JSON file.
+
+    Returns:
+    dict: The parsed dictionary if the file contains valid JSON.
+          An empty dictionary if the file is empty or not valid JSON.
+    """
+    try:
+        # Check if file is empty
+        if os.stat(fpath).st_size == 0:
+            print(f"Warning: The file '{fpath}' is empty.")
+            return {}
+
+        # Attempt to load JSON
+        with open(fpath, 'r') as json_file:
+            return json.load(json_file)
+    except FileNotFoundError:
+        print(f"Error: The file '{fpath}' does not exist.")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"Error: Failed to parse JSON file '{fpath}'. Detail: {e}")
+        return {}
 
 def read_band_list(fpath,modalities):
     with open(fpath, 'r') as f:
