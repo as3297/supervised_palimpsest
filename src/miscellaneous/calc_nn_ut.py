@@ -130,7 +130,7 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
                ys_page[i:min(i + chunk_size, len(ys_page))], n)
               for i in range(0, len(features_page), chunk_size)]
 
-    results = Parallel(n_jobs=nb_processes, batch_size=2,max_nbytes=None, prefer="processes")(delayed(process_chunk)(chunk) for chunk in chunks)
+    results = Parallel(n_jobs=nb_processes, batch_size=2,max_nbytes=None, prefer="processes",backend="loky")(delayed(process_chunk)(chunk) for chunk in chunks)
 
     print("Distance calculation complete")
     # Collect results from all chunks
