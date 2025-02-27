@@ -8,6 +8,7 @@ from read_data import read_msi_image_object, read_subset_features
 from msi_data_as_array import FullImageFromPILImageCube
 from util import save_pickle
 from scipy.spatial import distance
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from multiprocessing import Pool
 import argparse
@@ -72,7 +73,7 @@ def process_chunk(chunk_args):
     features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n = chunk_args
     return find_distance_btw_ut_and_folio_frag(features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n)
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_name,modality,n_org, box=None,):
+def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_name,modality,n_org,nb_processes, box=None,):
     """
     :param data_dir: Directory path where the necessary data files are stored.
     :param ut_folio_name: Name of the undertext folio for which features are being processed.
@@ -105,11 +106,10 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
         same_page = False
         if folio_name == ut_folio_name:
             same_page = True
-        #dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page)
-        dict[folio_name] = {}
+        dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page,nb_processes)
     return dict
 
-def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page):
+def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page,nb_processes):
     """
     :param features_ut: Feature set from the under-text section.
     :param xs_ut: X-coordinates associated with the under-text features.
@@ -130,11 +130,16 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
                ys_page[i:min(i + chunk_size, len(ys_page))], n)
               for i in range(0, len(features_page), chunk_size)]
 
-    # Use multiprocessing for parallel calculation
-    with Pool() as pool:
-        results = pool.map(process_chunk, chunks)
+    # Use concurrent.futures for parallel calculation
 
+
+    with ThreadPoolExecutor(max_workers=nb_processes) as executor:
+        # Use executor.map() to process the data
+        results = list(executor.map(process_chunk, chunks))
+
+        print("Distance calculation complete")
     # Collect results from all chunks
+
     dist, xs, ys = [], [], []
     for dist_chunk, xs_chunk, ys_chunk in results:
         dist.append(dist_chunk)
@@ -167,17 +172,20 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
     parser.add_argument("--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
+    parser.add_argument("--proces", type=int, default=4, help="Number run in parallel")
     # 3. Parse the arguments
     args = parser.parse_args()
     root_dir = args.root #r"D:" #r"/projects/palimpsests" #
     palimpsest_name = "Verona_msXL"
+    nb_processes = args.proces
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_names = [r"msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
+    folio_names = [r"msXL_335v_b",]# r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
     modality = "M"
     class_name = "undertext"
     n = 3
+
     box = None
     for folio_ut in folio_names:
-        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,box=box,)
+        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,nb_processes=nb_processes,box=box)
         fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.pkl")
         save_pickle(fpath,dict)

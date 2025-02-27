@@ -37,8 +37,8 @@ if __name__ == "__main__":
     dict_ut.pop("ys_ut", None)
     for folio_name,dict_folio in dict_ut.items():
             dist = dict_folio["dist"]
-            xs = dict_folio[folio_name]["xs"]
-            ys = dict_folio[folio_name]["ys"]
+            xs = dict_folio["xs"]
+            ys = dict_folio["ys"]
             dist_l.append(dist)
             xs_l.append(xs)
             ys_l.append(ys)
