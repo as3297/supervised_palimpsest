@@ -84,9 +84,9 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     """
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
-    features_ut = features_ut.astype(np.float32)
-    xs_ut = np.array(xs_ut).astype(np.uint8)
-    ys_ut = np.array(ys_ut).astype(np.uint8)
+    features_ut = features_ut.astype(np.float32)[:5]
+    xs_ut = np.array(xs_ut).astype(np.uint8)[:5]
+    ys_ut = np.array(ys_ut).astype(np.uint8)[:5]
     print("Done loading undertext features")
     #extract page features
     dict ={"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist()}
