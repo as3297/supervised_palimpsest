@@ -57,7 +57,7 @@ def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, neighbo
     :return: Tuple containing the distances to the nearest neighbors and their corresponding indices.
     """
     # Finding indices of 3 nearest neighbors from features_page to features_ut
-    dist = distance.cdist(features_ut, features_page,'euclidean')  # Transposed comparison
+    dist = distance.cdist(features_ut, features_page,'euclidean').astype(np.float32)  # Transposed comparison
     idx_dist_sorted_page_to_ut = np.argsort(dist, axis=1)
     n_nn_idx = idx_dist_sorted_page_to_ut[:, :neighbors]
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)# Picking 3 nearest neighbors
