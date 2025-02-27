@@ -10,6 +10,7 @@ from util import save_pickle
 from scipy.spatial import distance
 import numpy as np
 from multiprocessing import Pool
+import argparse
 
 def bhattacharyya_coefficient(hist1, hist2):
   """
@@ -164,7 +165,11 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
 
 if __name__ == "__main__":
 
-    root_dir = r"D:" #r"/projects/palimpsests" #
+    parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
+    parser.add_argument("--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
+    # 3. Parse the arguments
+    args = parser.parse_args()
+    root_dir = args.root #r"D:" #r"/projects/palimpsests" #
     palimpsest_name = "Verona_msXL"
     main_data_dir = os.path.join(root_dir, palimpsest_name)
     folio_names = [r"msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
