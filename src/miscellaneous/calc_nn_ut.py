@@ -8,9 +8,8 @@ from read_data import read_msi_image_object, read_subset_features
 from msi_data_as_array import FullImageFromPILImageCube
 from util import save_pickle
 from scipy.spatial import distance
-from concurrent.futures import ThreadPoolExecutor
+from joblib import Parallel, delayed
 import numpy as np
-from multiprocessing import Pool
 import argparse
 
 def bhattacharyya_coefficient(hist1, hist2):
@@ -75,14 +74,15 @@ def process_chunk(chunk_args):
 
 def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_name,modality,n_org,nb_processes, box=None,):
     """
-    :param data_dir: Directory path where the necessary data files are stored.
-    :param ut_folio_name: Name of the undertext folio for which features are being processed.
-    :param folio_name: Name of the folio whose features are compared against the undertext folio.
-    :param class_name: Class name used for categorizing or filtering data during feature loading.
-    :param modality: Type or mode of the data, which determines how features are loaded (e.g., image, text).
-    :param n: Number of nearest neighbors to find during distance calculation.
-    :param box: Optional parameter specifying a bounding box to limit feature processing (default is None).
-    :return: A dictionary containing distance metrics and coordinates ('dist', 'xs_ut', 'ys_ut', 'xs', 'ys') between features of the undertext folio and the specified folio.
+    :param data_dir: Directory path where the data is stored.
+    :param ut_folio_name: Name of the undertext folio to process.
+    :param folio_name: Name of the folio or list of folio names for which distances are calculated.
+    :param class_name: The class name used to filter features when reading data.
+    :param modality: Specific modality of features (e.g., grayscale, RGB) used for processing.
+    :param n_org: Original number of neighboring pixels for distance computation.
+    :param nb_processes: Number of processes to use for parallel computation.
+    :param box: Optional bounding box to limit feature extraction to a specific region.
+    :return: Dictionary containing distances between undertext features and page features for each folio, along with associated data.
     """
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
@@ -130,14 +130,9 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
                ys_page[i:min(i + chunk_size, len(ys_page))], n)
               for i in range(0, len(features_page), chunk_size)]
 
-    # Use concurrent.futures for parallel calculation
+    results = Parallel(n_jobs=nb_processes)(delayed(process_chunk)(chunk) for chunk in chunks)
 
-
-    with ThreadPoolExecutor(max_workers=nb_processes) as executor:
-        # Use executor.map() to process the data
-        results = list(executor.map(process_chunk, chunks))
-
-        print("Distance calculation complete")
+    print("Distance calculation complete")
     # Collect results from all chunks
 
     dist, xs, ys = [], [], []
@@ -162,11 +157,6 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
     dist_dict = {"dist":dist.tolist(),"xs":xs.tolist(),"ys":ys.tolist()}
     return dist_dict
 
-
-#find distance a Euclidean between every undertext feature and every pixel of every palimpsest
-#find the coordinates of tree pixels with the smallest distance
-#create a map using this pixels
-#color every pixel from this map according to index of
 
 if __name__ == "__main__":
 
