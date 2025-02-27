@@ -46,8 +46,8 @@ def load_page(data_dir,folio_name,modality):
     msi_im = msi_im_obj.ims_img
     row_indices, col_indices = np.meshgrid(np.arange(im_shape[0]), np.arange(im_shape[1]), indexing='ij')
     features = np.reshape(msi_im, newshape=(-1, im_pil_ob.nb_bands))
-    row_indices = np.reshape(row_indices, newshape=(-1,))
-    col_indices = np.reshape(col_indices, newshape=(-1,))
+    row_indices = np.reshape(row_indices, newshape=(-1,)).astype(np.uint32)
+    col_indices = np.reshape(col_indices, newshape=(-1,)).astype(np.uint32)
     return features,col_indices,row_indices
 
 def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, neighbors=3):
@@ -58,7 +58,7 @@ def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, neighbo
     :return: Tuple containing the distances to the nearest neighbors and their corresponding indices.
     """
     # Finding indices of 3 nearest neighbors from features_page to features_ut
-    dist= distance.cdist(features_ut, features_page,'euclidean')  # Transposed comparison
+    dist = distance.cdist(features_ut, features_page,'euclidean')  # Transposed comparison
     idx_dist_sorted_page_to_ut = np.argsort(dist, axis=1)
     n_nn_idx = idx_dist_sorted_page_to_ut[:, :neighbors]
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)# Picking 3 nearest neighbors
@@ -87,8 +87,8 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_name, class_nam
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
     features_ut = features_ut.astype(np.float32)
-    xs_ut = np.array(xs_ut).astype(np.uint8)
-    ys_ut = np.array(ys_ut).astype(np.uint8)
+    xs_ut = np.array(xs_ut).astype(np.uint32)
+    ys_ut = np.array(ys_ut).astype(np.uint32)
     print("Done loading undertext features")
     #extract page features
     dict ={"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist()}

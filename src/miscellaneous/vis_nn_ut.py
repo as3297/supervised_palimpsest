@@ -17,7 +17,7 @@ if __name__ == "__main__":
     root_dir = r"D:"
     palimpsest_name = "Verona_msXL"
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_name = "msXL_335v_b"
+    folio_name = "msXL_315v_b"
     modality = "M"
     class_name = "undertext"
     n = 3
