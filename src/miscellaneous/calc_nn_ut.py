@@ -130,7 +130,7 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
                ys_page[i:min(i + chunk_size, len(ys_page))], n)
               for i in range(0, len(features_page), chunk_size)]
 
-    results = Parallel(n_jobs=nb_processes)(delayed(process_chunk)(chunk) for chunk in chunks)
+    results = Parallel(n_jobs=nb_processes, batch_size=2,max_nbytes=None, prefer="processes")(delayed(process_chunk)(chunk) for chunk in chunks)
 
     print("Distance calculation complete")
     # Collect results from all chunks
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     palimpsest_name = "Verona_msXL"
     nb_processes = args.proces
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_names = [r"msXL_335v_b",]# r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
+    folio_names = [r"msXL_335v_b",]#r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
     modality = "M"
     class_name = "undertext"
     n = 3
