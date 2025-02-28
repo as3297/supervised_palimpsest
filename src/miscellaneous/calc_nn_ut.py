@@ -49,7 +49,7 @@ def load_page(data_dir,folio_name,modality):
     col_indices = np.reshape(col_indices, newshape=(-1,)).astype(np.uint32)
     return features,col_indices,row_indices
 
-def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, xs_ut,ys_ut, same_page, neighbors=3):
+def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, xs_ut,ys_ut, same_page, neighbors):
     """
     :param features_ut: Array-like structure representing the features of user transactions.
     :param features_page: Array-like structure representing the features of the pages.
@@ -58,11 +58,7 @@ def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, xs_ut,y
     """
     # Finding indices of 3 nearest neighbors from features_page to features_ut
     dist = distance.cdist(features_ut, features_page,'euclidean').astype(np.float32)  # Transposed comparison
-    idx_dist_sorted_page_to_ut = np.argsort(dist, axis=1)
-    new_neighbours = neighbors
-    if same_page:
-        new_neighbors = neighbors+1
-    n_nn_idx = idx_dist_sorted_page_to_ut[:, :new_neighbors]
+    n_nn_idx = np.argsort(dist, axis=1)[:, :neighbors]
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)# Picking 3 nearest neighbors
     xs = np.repeat(xs[np.newaxis,:], repeats=len(features_ut), axis=0)
     ys = np.repeat(ys[np.newaxis,:], repeats=len(features_ut), axis=0)
@@ -72,8 +68,8 @@ def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, xs_ut,y
 
 # Helper function for processing chunks in parallel
 def process_chunk(chunk_args):
-    features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, xs_ut_chunk, ys_ut_chunk, same_page, n = chunk_args
-    return find_distance_btw_ut_and_folio_frag(features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, xs_ut_chunk, ys_ut_chunk, same_page, n)
+    features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n = chunk_args
+    return find_distance_btw_ut_and_folio_frag(features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk,n)
 
 def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, box=None,):
     """
@@ -129,8 +125,8 @@ def pick_closer_nn(generator):
         - "ys_ut": A list of y-coordinates for the undertext elements corresponding to the neighbors
     """
     iter = 0
-    dist_acc,xs_acc,ys_acc,xs_ut_acc,ys_ut_acc = [],[],[],[],[]
-    for dist,xs,ys,xs_ut,ys_ut,same_page,n in generator:
+    dist_acc,xs_acc,ys_acc = [],[],[]
+    for dist,xs,ys,n in generator:
         if iter == 0:
             dist_acc = dist
             xs_acc = xs
@@ -141,19 +137,12 @@ def pick_closer_nn(generator):
             xs_acc = np.concatenate([xs_acc,xs], axis=1)
             ys_acc = np.concatenate([ys_acc,ys], axis=1)
 
-            idx_dist_sorted = np.argsort(dist_acc, axis=1)
-            # ignore first neighbour if it is the same folio as undertext's folio
-            if same_page:
-                n_nn_idx = idx_dist_sorted[:, 1:n]
-            else:
-                n_nn_idx = idx_dist_sorted[:, 0:n]
-
+            n_nn_idx = np.argsort(dist_acc, axis=1)[:, 0:n]
             dist_acc = np.take_along_axis(dist_acc, n_nn_idx, axis=1)
             xs_acc = np.take_along_axis(xs_acc, n_nn_idx, axis=1)
             ys_acc = np.take_along_axis(ys_acc, n_nn_idx, axis=1)
-
         iter += 1
-    return {"dist":dist_acc.tolist(),"xs":xs_acc.tolist(),"ys":ys_acc.tolist(),"xs_ut":xs_ut.tolist(),"ys_ut":ys_ut.tolist()}
+    return dist_acc.astype(np.float32),xs_acc,ys_acc
 
 def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page,nb_processes):
     """
@@ -167,22 +156,30 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
     :param same_page: Boolean flag indicating whether the under-text and reference features are from the same page.
     :return: Dictionary containing the distances, and corresponding coordinates of the nearest neighbors.
     """
+    #if same page as ut page extract more nearest neighbours and then ignore the first neighbour
+    if same_page:
+        n = n+1
     #process image chunk by chunk to save memory
     chunk_size = 100  # Set a reasonable chunk size
 
     # Split features_page, xs_page, and ys_page into chunks
     chunks = [(features_ut, features_page[i:min(i + chunk_size, len(features_page))],
                xs_page[i:min(i + chunk_size, len(xs_page))],
-               ys_page[i:min(i + chunk_size, len(ys_page))], xs_ut,ys_ut,same_page,n)
+               ys_page[i:min(i + chunk_size, len(ys_page))],n)
               for i in range(0, len(features_page), chunk_size)]
 
-    results = Parallel(n_jobs=nb_processes,return_as="generator")(delayed(process_chunk)(chunk) for chunk in chunks)
+    results = Parallel(n_jobs=nb_processes,return_as="generator",backend="threading")(delayed(process_chunk)(chunk) for chunk in chunks)
 
 
     # Collect results from all chunks
-    dist_dict = pick_closer_nn(results)
+    dist,xs,ys = pick_closer_nn(results)
     print("Distance calculation complete")
-    return dist_dict
+    if same_page:
+        dist = dist[:, 1:]
+        xs = xs[:, 1:]
+        ys = ys[:, 1:]
+
+    return {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
 
 
 if __name__ == "__main__":
