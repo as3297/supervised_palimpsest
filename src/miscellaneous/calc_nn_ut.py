@@ -67,7 +67,7 @@ def process_chunk(chunk_args):
 
 # Helper function for processing chunks in parallel
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, chunk_size, box=None,):
+def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, chunk_size, save_dir,box=None,):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -95,6 +95,8 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
         if folio_name == ut_folio_name:
             same_page = True
         dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
+        fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_euclid_nn_{n}.pkl")
+        save_pickle(fpath,dict)
     return dict
 
 def process_generator(generator):
@@ -186,13 +188,16 @@ if __name__ == "__main__":
     nb_processes = args.proces
     chunk_size = args.chunk
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_names = [r"msXL_335v_b",]#r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
+    folio_names = [r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
     modality = "M"
     class_name = "undertext"
     n = 3
-
     box = None
+    
     for folio_ut in folio_names:
-        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,nb_processes=nb_processes,chunk_size = chunk_size, box=box)
-        fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.pkl")
-        save_pickle(fpath,dict)
+        save_dir = os.path.join(main_data_dir,folio_ut, "distances")
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
+                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size, save_dir=save_dir, box=box)
+
