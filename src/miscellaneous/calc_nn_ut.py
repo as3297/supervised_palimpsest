@@ -49,7 +49,7 @@ def load_page(data_dir,folio_name,modality):
     col_indices = np.reshape(col_indices, newshape=(-1,)).astype(np.uint32)
     return features,col_indices,row_indices
 
-def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, xs_ut,ys_ut, same_page, neighbors):
+def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, neighbors):
     """
     :param features_ut: Array-like structure representing the features of user transactions.
     :param features_page: Array-like structure representing the features of the pages.
@@ -64,7 +64,7 @@ def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, xs_ut,y
     ys = np.repeat(ys[np.newaxis,:], repeats=len(features_ut), axis=0)
     xs = np.take_along_axis(xs, n_nn_idx, axis=1)
     ys = np.take_along_axis(ys, n_nn_idx, axis=1)
-    return dist,xs,ys,xs_ut,ys_ut,same_page,neighbors  # Returning indices of nearest neighbors
+    return dist,xs,ys,neighbors  # Returning indices of nearest neighbors
 
 # Helper function for processing chunks in parallel
 def process_chunk(chunk_args):
@@ -104,7 +104,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
         dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page,nb_processes)
     return dict
 
-def pick_closer_nn(generator):
+def process_generator(generator):
     """
     :param generator: An iterable that yields tuples of data in the form
         (dist, xs, ys, xs_ut, ys_ut, n, same_page), where:
@@ -168,11 +168,11 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
                ys_page[i:min(i + chunk_size, len(ys_page))],n)
               for i in range(0, len(features_page), chunk_size)]
 
-    results = Parallel(n_jobs=nb_processes,return_as="generator",backend="threading")(delayed(process_chunk)(chunk) for chunk in chunks)
+    results = Parallel(n_jobs=nb_processes,return_as="generator_unordered")(delayed(process_chunk)(chunk) for chunk in chunks)
 
 
     # Collect results from all chunks
-    dist,xs,ys = pick_closer_nn(results)
+    dist,xs,ys = process_generator(results)
     print("Distance calculation complete")
     if same_page:
         dist = dist[:, 1:]
