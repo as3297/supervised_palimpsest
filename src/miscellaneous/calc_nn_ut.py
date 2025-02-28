@@ -67,7 +67,7 @@ def process_chunk(chunk_args):
 
 # Helper function for processing chunks in parallel
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, box=None,):
+def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, chunk_size, box=None,):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -94,7 +94,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
         same_page = False
         if folio_name == ut_folio_name:
             same_page = True
-        dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page,nb_processes)
+        dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
     return dict
 
 def process_generator(generator):
@@ -137,7 +137,7 @@ def process_generator(generator):
         iter += 1
     return dist_acc.astype(np.float32),xs_acc,ys_acc
 
-def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page,nb_processes):
+def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size):
     """
     :param features_ut: Feature set from the under-text section.
     :param xs_ut: X-coordinates associated with the under-text features.
@@ -152,8 +152,6 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
     #if same page as ut page extract more nearest neighbours and then ignore the first neighbour
     if same_page:
         n = n+1
-    #process image chunk by chunk to save memory
-    chunk_size = 100  # Set a reasonable chunk size
 
     # Split features_page, xs_page, and ys_page into chunks
     chunks = [(features_ut, features_page[i:min(i + chunk_size, len(features_page))],
@@ -186,6 +184,7 @@ if __name__ == "__main__":
     root_dir = args.root #r"D:" #r"/projects/palimpsests" #
     palimpsest_name = "Verona_msXL"
     nb_processes = args.proces
+    chunk_size = args.chunk
     main_data_dir = os.path.join(root_dir, palimpsest_name)
     folio_names = [r"msXL_335v_b",]#r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
     modality = "M"
@@ -194,6 +193,6 @@ if __name__ == "__main__":
 
     box = None
     for folio_ut in folio_names:
-        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,nb_processes=nb_processes,box=box)
+        dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,modality,n,nb_processes=nb_processes,chunk_size = chunk_size, box=box)
         fpath = os.path.join(main_data_dir,folio_ut,f"euclid_nn_{n}.pkl")
         save_pickle(fpath,dict)
