@@ -44,7 +44,7 @@ def load_page(data_dir,folio_name,modality):
     im_shape = (im_pil_ob.height, im_pil_ob.width)
     msi_im = msi_im_obj.ims_img
     row_indices, col_indices = np.meshgrid(np.arange(im_shape[0]), np.arange(im_shape[1]), indexing='ij')
-    features = np.reshape(msi_im, newshape=(-1, im_pil_ob.nb_bands))
+    features = np.reshape(msi_im, newshape=(-1, im_pil_ob.nb_bands)).astype(np.float32)
     row_indices = np.reshape(row_indices, newshape=(-1,)).astype(np.uint32)
     col_indices = np.reshape(col_indices, newshape=(-1,)).astype(np.uint32)
     return features,col_indices,row_indices
@@ -61,10 +61,8 @@ def process_chunk(chunk_args):
     dist = distance.cdist(features_ut, features_page,'euclidean').astype(np.float32)  # Transposed comparison
     n_nn_idx = np.argsort(dist, axis=1)[:, :n]
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)# Picking 3 nearest neighbors
-    xs = np.repeat(xs[np.newaxis,:], repeats=len(features_ut), axis=0)
-    ys = np.repeat(ys[np.newaxis,:], repeats=len(features_ut), axis=0)
-    xs = np.take_along_axis(xs, n_nn_idx, axis=1)
-    ys = np.take_along_axis(ys, n_nn_idx, axis=1)
+    xs = np.array([xs[n_nn_idx[i,:]] for i in range(len(features_ut))])
+    ys = np.array([ys[n_nn_idx[i,:]] for i in range(len(features_ut))])
     return dist,xs,ys,n  # Returning indices of nearest neighbors
 
 # Helper function for processing chunks in parallel
@@ -91,9 +89,6 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
     dict ={}
     for folio_name in folio_names:
         features_page, xs_page, ys_page = load_page(data_dir,folio_name,modality)
-        features_page = features_page.astype(np.float32)
-        xs_page = xs_page
-        ys_page = ys_page
         print(f"Done loading page {folio_name} features")
         #increase number of pixel if the page of undertext is the same a page of calculated distances
         same_page = False
@@ -183,8 +178,9 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
-    parser.add_argument("--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
-    parser.add_argument("--proces", type=int, default=4, help="Number run in parallel")
+    parser.add_argument("-r","--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
+    parser.add_argument("-p","--proces", type=int, default=4, help="Number run in parallel")
+    parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
     # 3. Parse the arguments
     args = parser.parse_args()
     root_dir = args.root #r"D:" #r"/projects/palimpsests" #
