@@ -49,27 +49,25 @@ def load_page(data_dir,folio_name,modality):
     col_indices = np.reshape(col_indices, newshape=(-1,)).astype(np.uint32)
     return features,col_indices,row_indices
 
-def find_distance_btw_ut_and_folio_frag(features_ut,features_page,xs,ys, neighbors):
+def process_chunk(chunk_args):
     """
     :param features_ut: Array-like structure representing the features of user transactions.
     :param features_page: Array-like structure representing the features of the pages.
     :param neighbors: Integer indicating the number of nearest neighbors to find.
     :return: Tuple containing the distances to the nearest neighbors and their corresponding indices.
     """
+    features_ut, features_page, xs, ys, n = chunk_args
     # Finding indices of 3 nearest neighbors from features_page to features_ut
     dist = distance.cdist(features_ut, features_page,'euclidean').astype(np.float32)  # Transposed comparison
-    n_nn_idx = np.argsort(dist, axis=1)[:, :neighbors]
+    n_nn_idx = np.argsort(dist, axis=1)[:, :n]
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)# Picking 3 nearest neighbors
     xs = np.repeat(xs[np.newaxis,:], repeats=len(features_ut), axis=0)
     ys = np.repeat(ys[np.newaxis,:], repeats=len(features_ut), axis=0)
     xs = np.take_along_axis(xs, n_nn_idx, axis=1)
     ys = np.take_along_axis(ys, n_nn_idx, axis=1)
-    return dist,xs,ys,neighbors  # Returning indices of nearest neighbors
+    return dist,xs,ys,n  # Returning indices of nearest neighbors
 
 # Helper function for processing chunks in parallel
-def process_chunk(chunk_args):
-    features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk, n = chunk_args
-    return find_distance_btw_ut_and_folio_frag(features_ut, features_page_chunk, xs_page_chunk, ys_page_chunk,n)
 
 def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, box=None,):
     """
