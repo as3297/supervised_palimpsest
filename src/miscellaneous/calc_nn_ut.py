@@ -81,9 +81,9 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
     """
     #extract ut features
     features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
-    features_ut = features_ut.astype(np.float32)
-    xs_ut = np.array(xs_ut).astype(np.uint32)
-    ys_ut = np.array(ys_ut).astype(np.uint32)
+    features_ut = features_ut.astype(np.float32)[:500,:]
+    xs_ut = np.array(xs_ut).astype(np.uint32)[:500]
+    ys_ut = np.array(ys_ut).astype(np.uint32)[:500]
     print("Done loading undertext features")
     #extract page features
     dict ={}
@@ -137,7 +137,7 @@ def process_generator(generator):
             xs_acc = np.take_along_axis(xs_acc, n_nn_idx, axis=1)
             ys_acc = np.take_along_axis(ys_acc, n_nn_idx, axis=1)
         iter += 1
-    return dist_acc.astype(np.float32),xs_acc,ys_acc
+    return dist_acc,xs_acc,ys_acc
 
 def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size):
     """
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     class_name = "undertext"
     n = 3
     box = None
-    
+
     for folio_ut in folio_names:
         save_dir = os.path.join(main_data_dir,folio_ut, "distances")
         if not os.path.exists(save_dir):

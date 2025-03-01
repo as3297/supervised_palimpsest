@@ -17,33 +17,34 @@ if __name__ == "__main__":
     root_dir = r"D:"
     palimpsest_name = "Verona_msXL"
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_name = "msXL_315v_b"
+    ut_folio_name = "msXL_335v_b"
     modality = "M"
     class_name = "undertext"
     n = 3
     box = None
-    fpath = os.path.join(root_dir,palimpsest_name,folio_name,f"euclid_nn_{n}.pkl")
-    dict_ut = read_pickle(fpath)
-    fpath = os.path.join(root_dir,palimpsest_name,folio_name,"mask",folio_name+"-"+class_name+"_black.png")
-    im = io.imread(fpath, as_gray=True)
-    im_zero = np.zeros(im.shape)
+    folio_names = [r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
+
+    for folio_name in folio_names:
+        fpath = os.path.join(root_dir,palimpsest_name,ut_folio_name,"distances",ut_folio_name+"_"+folio_name+"_"+f"euclid_nn_{n}.pkl")
+        dict_ut = read_pickle(fpath)
+        dict_ut = dict_ut[folio_name]
+        fpath = os.path.join(root_dir,palimpsest_name,folio_name,"mask",folio_name+"-"+class_name+"_black.png")
+        im = io.imread(fpath, as_gray=True)
+        im_zero = np.zeros(im.shape)
 
 
-    dist_l, xs_l,ys_l, folio_name_l = [],[],[],[]
-    xs_ut = dict_ut["xs_ut"]
-    ys_ut = dict_ut["ys_ut"]
+        dist_l, xs_l,ys_l, folio_name_l = [],[],[],[]
+        xs_ut = dict_ut["xs_ut"]
+        ys_ut = dict_ut["ys_ut"]
 
-    dict_ut.pop("xs_ut", None)
-    dict_ut.pop("ys_ut", None)
-    for folio_name,dict_folio in dict_ut.items():
-            dist = dict_folio["dist"]
-            xs = dict_folio["xs"]
-            ys = dict_folio["ys"]
-            dist_l.append(dist)
-            xs_l.append(xs)
-            ys_l.append(ys)
-            folio_name = np.repeat(np.array([folio_name]*len(dist))[:, np.newaxis], repeats=n, axis=1)
-            folio_name_l.append(folio_name)
+        dist = dict_ut["dist"]
+        xs = dict_ut["xs"]
+        ys = dict_ut["ys"]
+    dist_l.append(dist)
+    xs_l.append(xs)
+    ys_l.append(ys)
+    folio_name = np.repeat(np.array([folio_name]*len(dist))[:, np.newaxis], repeats=n, axis=1)
+    folio_name_l.append(folio_name)
 
     dist = np.concatenate(dist_l,axis=1)
     xs = np.concatenate(xs_l,axis=1)
