@@ -99,7 +99,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
         ys = np.zeros((len(features_ut), n))
         for ut_chunk in range(0,len(features_ut),ut_chunk_size):
             end = min(ut_chunk+ut_chunk_size,len(features_ut))
-            dist_chunk,xs_chunk,ys_chunk =find_distance_btw_feat(features_ut[ut_chunk:end], xs_ut[ut_chunk:end], ys_ut[ut_chunk:end], features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
+            dist_chunk,xs_chunk,ys_chunk =find_distance_btw_feat(features_ut[ut_chunk:end], features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
             dist[ut_chunk:end] = dist_chunk
             xs[ut_chunk:end] = xs_chunk
             ys[ut_chunk:end] = ys_chunk
