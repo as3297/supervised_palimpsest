@@ -86,18 +86,27 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
     ys_ut = np.array(ys_ut).astype(np.uint32)
     print("Done loading undertext features")
     #extract page features
-    dict ={}
+    ut_chunk_size = 500
     for folio_name in folio_names:
-        features_page, xs_page, ys_page = load_page(data_dir,folio_name,modality)
+        features_page, xs_page, ys_page = load_page(data_dir, folio_name, modality)
         print(f"Done loading page {folio_name} features")
-        #increase number of pixel if the page of undertext is the same a page of calculated distances
+        # increase number of pixel if the page of undertext is the same a page of calculated distances
         same_page = False
         if folio_name == ut_folio_name:
             same_page = True
-        dict[folio_name]=find_distance_btw_feat(features_ut, xs_ut, ys_ut, features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
+        dist = np.zeros((len(features_ut), n))
+        xs = np.zeros((len(features_ut), n))
+        ys = np.zeros((len(features_ut), n))
+        for ut_chunk in range(0,len(features_ut),ut_chunk_size):
+            end = min(ut_chunk+ut_chunk_size,len(features_ut))
+            dist_chunk,xs_chunk,ys_chunk =find_distance_btw_feat(features_ut[ut_chunk:end], xs_ut[ut_chunk:end], ys_ut[ut_chunk:end], features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
+            dist[ut_chunk:end] = dist_chunk
+            xs[ut_chunk:end] = xs_chunk
+            ys[ut_chunk:end] = ys_chunk
+        dict_nn = {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
         fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_euclid_nn_{n}.pkl")
-        save_pickle(fpath,dict)
-    return dict
+        save_pickle(fpath,dict_nn)
+
 
 def process_generator(generator):
     """
@@ -139,7 +148,7 @@ def process_generator(generator):
         iter += 1
     return dist_acc,xs_acc,ys_acc
 
-def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size):
+def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size):
     """
     :param features_ut: Feature set from the under-text section.
     :param xs_ut: X-coordinates associated with the under-text features.
@@ -172,7 +181,7 @@ def find_distance_btw_feat(features_ut,xs_ut,ys_ut,features_page,xs_page,ys_page
         xs = xs[:, 1:]
         ys = ys[:, 1:]
 
-    return {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
+    return dist,xs,ys
 
 
 if __name__ == "__main__":
