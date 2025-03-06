@@ -1,5 +1,5 @@
 import argparse
-from training_binary_new import training
+from training_binary import training
 import json
 import os
 import sys

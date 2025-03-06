@@ -103,6 +103,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
             dist[ut_chunk:end] = dist_chunk
             xs[ut_chunk:end] = xs_chunk
             ys[ut_chunk:end] = ys_chunk
+
         dict_nn = {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
         fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_euclid_nn_{n}.pkl")
         save_pickle(fpath,dict_nn)

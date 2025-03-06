@@ -4,14 +4,14 @@ from model import build_model
 from util import extend_json, save_json, convert_float_in_dict
 from datetime import datetime
 import os
-from dataset_efficient import dataset
+from dataset import dataset
 
 osp = os.path.join
 
 
 class PalGraph():
   def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,
-               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate):
+               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels,simple_noise_channel_model):
     # Create an instance of the model
     self.nb_units_per_layer = nb_units_per_layer
     self.nb_layers = nb_layers
@@ -31,7 +31,7 @@ class PalGraph():
         self.optimizer = tf.keras.optimizers.SGD(learning_rate= self.learning_rate)
 
     if restore_path is None:
-          self.model = build_model(nb_features,nb_units_per_layer, nb_layers, dropout_rate)
+          self.model = build_model_noise_channels(nb_features,nb_units_per_layer, nb_layers, dropout_rate,add_noise_channels,simple_noise_channel_model)
           self.model_dir = model_dir
           self.model.compile(
         optimizer=self.optimizer,
@@ -74,6 +74,8 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["weight_decay"] = float(weight_decay)
   d["dropout_rate"] = float(dropout_rate)
   d["patience"] = int(patience)
+  d["add_noise_channels"] = gr.add_noise_channels
+  d["simple_noise_channel_model"] = gr.simple_noise_channel_model
   save_path = osp(gr.model_dir,"training_parameters.json")
   if not os.path.exists(save_path):
      save_json(save_path, d)
@@ -115,7 +117,10 @@ def training(
             folios_val=[r"msXL_315r_b"],
             learning_rate_decay_epoch_step=0,
             patience=15,
-            classes_dict={"undertext_renn": 1, "not_undertext": 0},            restore_path=None,
+            add_noise_channels = False,
+            simple_noise_channel_model = True,
+            classes_dict={"undertext_renn": 1, "not_undertext": 0},
+            restore_path=None,
             debugging=False):
     """
     Trains a machine learning model on a specified dataset using given hyperparameters
@@ -156,6 +161,7 @@ def training(
         - Trains the model using the specified training data for the defined epochs.
         - Saves the trained model to the file system.
     """
+
     base_data_dir = osp(main_data_dir, palimpsest_name)
     model_dir = os.path.join(model_dir, palimpsest_name, current_time)
     if not os.path.exists(model_dir):
@@ -183,6 +189,30 @@ def training(
     validation_data = (dataset_validation[0], dataset_validation[1]),)
 
     gr.model.save(os.path.join(gr.model_dir, "model.keras"))
+    #save model as h5
+    gr.model.save(os.path.join(gr.model_dir, "model.h5"))
+    #save optimizer parameters as .npy
+
+
+    # Save optimizer parameters as .npy for future restoration
+    optimizer_weights_path = os.path.join(gr.model_dir, "optimizer_weights.npy")
+    np.save(optimizer_weights_path, gr.model.optimizer.get_weights())
+    
+    
+    #save test and train metrics
+
+    train_metrics = {
+        "loss": history.history.get('loss'),
+        "accuracy": history.history.get('accuracy')
+    }
+    val_metrics = {
+        "val_loss": history.history.get('val_loss'),
+        "val_accuracy": history.history.get('val_accuracy')
+    }
+    a = "noise_channel" if add_noise_channels else ""
+    a = "simple_"+a if simple_noise_channel_model else a
+    metrics_path = os.path.join(gr.model_dir, "train_val_metrics" + a + ".json")
+    save_json( metrics_path,{"train_metrics": train_metrics, "val_metrics": val_metrics},)
 
 
 

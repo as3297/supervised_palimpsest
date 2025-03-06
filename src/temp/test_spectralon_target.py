@@ -1,4 +1,4 @@
-import matplotlib
+
 import matplotlib.pyplot as plt
 # Set a backend explicitly (optional if not pre-configured)
 matplotlib.use("TkAgg")  # Use any supported interactive backend, e.g., TkAgg or Qt5Agg
