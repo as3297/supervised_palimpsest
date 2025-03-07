@@ -1,5 +1,5 @@
 import argparse
-from training_binary import training
+from training_binary_channel import training
 import json
 import os
 import sys
@@ -11,7 +11,7 @@ def run_training():
                         prog='Run training',
                         description='Trains supervised NN algorithm for palimpsest ink detection',
                         epilog='Thanks to the universe')
-    parser.add_argument('--epochs',"-ep", type=int, default=500, help='Number of training epochs')
+    parser.add_argument('--epochs',"-ep", type=int, default=1, help='Number of training epochs')
     parser.add_argument('--batch_size',"-bs", type=int, default=32 * 4, help='Batch size for training')
     parser.add_argument('--modalities',"-md", nargs='+', default=["M"], help='List of modalities')
     parser.add_argument('--nb_nodes_in_layer',"-nodes", type=int, default=256, help='Number of nodes in a layer')

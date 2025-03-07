@@ -198,7 +198,7 @@ if __name__ == "__main__":
     nb_processes = args.proces
     chunk_size = args.chunk
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_names = [r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]
+    folio_names = [ "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
     modality = "M"
     class_name = "undertext"
     n = 3

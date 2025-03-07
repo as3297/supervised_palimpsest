@@ -1,7 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from model import build_model
-from util import extend_json, save_json, convert_float_in_dict
+from sklearn.metrics import confusion_matrix
+
+from model import build_model,build_model_with_noise_channel
+from src.util import calculate_confusion_matrix
+from util import extend_json, save_json, convert_float_in_dict, load_confusion_matrix
 from datetime import datetime
 import os
 from dataset import dataset
@@ -11,12 +14,13 @@ osp = os.path.join
 
 class PalGraph():
   def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,
-               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels,simple_noise_channel_model):
+               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels):
     # Create an instance of the model
     self.nb_units_per_layer = nb_units_per_layer
     self.nb_layers = nb_layers
     self.restore_path = restore_path
     self.learning_rate = learning_rate
+    self.add_noise_channels = add_noise_channels
     if loss == "binary_crossentropy":
       self.loss_object = tf.keras.losses.BinaryCrossentropy(
           from_logits=False,
@@ -31,27 +35,38 @@ class PalGraph():
         self.optimizer = tf.keras.optimizers.SGD(learning_rate= self.learning_rate)
 
     if restore_path is None:
-          self.model = build_model_noise_channels(nb_features,nb_units_per_layer, nb_layers, dropout_rate,add_noise_channels,simple_noise_channel_model)
+          self.model = build_model(nb_features,nb_units_per_layer, nb_layers, dropout_rate,add_noise_channels)
           self.model_dir = model_dir
-          self.model.compile(
-        optimizer=self.optimizer,
-        loss=self.loss_object,
-        loss_weights=None,
-        metrics=["accuracy"],
-)
+
     else:
-          self.model_dir = restore_path
-          # Load the optimizer weights
-          opt_weights = np.load(osp(self.model_dir,'optimizer.npy'), allow_pickle=True)
-          grad_vars = self.model.trainable_weights
-          # This need not be model.trainable_weights; it must be a correctly-ordered list of
-          # grad_vars corresponding to how you usually call the optimizer.
-          zero_grads = [tf.zeros_like(w) for w in grad_vars]
-          # Apply gradients which don't do nothing with Adam
-          self.optimizer.apply_gradients(zip(zero_grads, grad_vars))
-          # Set the weights of the optimizer
-          self.optimizer.set_weights(opt_weights)
-          self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
+        self.model_dir = restore_path
+        self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
+        if add_noise_channels:
+            confusion_matrix = load_confusion_matrix(restore_path)
+            self.model = build_model_with_noise_channel(self.model,confusion_matrix=confusion_matrix)
+
+    if add_noise_channels:
+        # ignore baseline loss in training
+        BETA = 0.
+        self.model.compile(
+            optimizer=self.optimizer,
+            loss=self.loss_object,
+            loss_weights = [1. - BETA, BETA],
+            metrics=["accuracy"],
+        )
+    else:
+        self.model.compile(
+            optimizer=self.optimizer,
+            loss=self.loss_object,
+            loss_weights=None,
+            metrics=["accuracy"],
+        )
+
+
+    def restore_optimizer_state(self,model,optimizer):
+        """If model stored in .h5 restore optimizer state first"""
+        checkpoint = tf.train.Checkpoint(model=self.model,optim=self.optimizer)
+        checkpoint.restore(path=os.path.join(self.restore_path,'ckpt-1')).assert_consumed()
 
 
 def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step,
@@ -75,7 +90,7 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["dropout_rate"] = float(dropout_rate)
   d["patience"] = int(patience)
   d["add_noise_channels"] = gr.add_noise_channels
-  d["simple_noise_channel_model"] = gr.simple_noise_channel_model
+
   save_path = osp(gr.model_dir,"training_parameters.json")
   if not os.path.exists(save_path):
      save_json(save_path, d)
@@ -118,7 +133,6 @@ def training(
             learning_rate_decay_epoch_step=0,
             patience=15,
             add_noise_channels = False,
-            simple_noise_channel_model = True,
             classes_dict={"undertext_renn": 1, "not_undertext": 0},
             restore_path=None,
             debugging=False):
@@ -173,7 +187,7 @@ def training(
     print("nb_features",nb_features)
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
-                  dropout_rate,learning_rate)
+                  dropout_rate,learning_rate,add_noise_channels)
     #save model hyperparametrs
     save_training_parameters(gr, debugging, batch_size, epochs,nb_features,
                            learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience)
@@ -182,6 +196,8 @@ def training(
     #create the TensorBoard callback
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     #create the Early Stopping callback
+    if patience==-1:
+        patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
     history = gr.model.fit(dataset_train[0], dataset_train[1],
     epochs = epochs,
@@ -195,12 +211,12 @@ def training(
 
 
     # Save optimizer parameters as .npy for future restoration
-    optimizer_weights_path = os.path.join(gr.model_dir, "optimizer_weights.npy")
-    np.save(optimizer_weights_path, gr.model.optimizer.get_weights())
+    checkpoint = tf.train.Checkpoint(model=gr.model, optim=gr.optimizer)
+    manager = tf.train.CheckpointManager(checkpoint, gr.model_dir, max_to_keep=1)
+    manager.save()
     
     
     #save test and train metrics
-
     train_metrics = {
         "loss": history.history.get('loss'),
         "accuracy": history.history.get('accuracy')
@@ -210,10 +226,14 @@ def training(
         "val_accuracy": history.history.get('val_accuracy')
     }
     a = "noise_channel" if add_noise_channels else ""
-    a = "simple_"+a if simple_noise_channel_model else a
     metrics_path = os.path.join(gr.model_dir, "train_val_metrics" + a + ".json")
     save_json( metrics_path,{"train_metrics": train_metrics, "val_metrics": val_metrics},)
-
+    confusion_matrix = calculate_confusion_matrix(
+        gr.model,gr.model_dir,
+        dataset_train[0],
+        dataset_train[1],
+        batch_size,len(classes_dict.keys()))
+    print("Confusion matrix",confusion_matrix)
 
 
 if __name__=="__main__":
