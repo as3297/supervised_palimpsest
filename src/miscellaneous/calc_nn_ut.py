@@ -67,7 +67,7 @@ def process_chunk(chunk_args):
 
 # Helper function for processing chunks in parallel
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, chunk_size, save_dir,box=None,):
+def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, chunk_size,ut_chunk_size, save_dir,box=None,):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -86,7 +86,6 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
     ys_ut = np.array(ys_ut).astype(np.uint32)
     print("Done loading undertext features")
     #extract page features
-    ut_chunk_size = 2000
     for folio_name in folio_names:
         features_page, xs_page, ys_page = load_page(data_dir, folio_name, modality)
         print(f"Done loading page {folio_name} features")
@@ -191,12 +190,15 @@ if __name__ == "__main__":
     parser.add_argument("-r","--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
     parser.add_argument("-p","--proces", type=int, default=4, help="Number run in parallel")
     parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
+    parser.add_argument("-utch", "--utchunk", type=int, default=100,
+                        help="Undertext pixels number for a chunk in distance computation")
     # 3. Parse the arguments
     args = parser.parse_args()
     root_dir = args.root #r"D:" #r"/projects/palimpsests" #
     palimpsest_name = "Verona_msXL"
     nb_processes = args.proces
     chunk_size = args.chunk
+    ut_chunk_size = args.utchunk
     main_data_dir = os.path.join(root_dir, palimpsest_name)
     folio_names = [ "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
     modality = "M"
@@ -209,5 +211,5 @@ if __name__ == "__main__":
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
-                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size, save_dir=save_dir, box=box)
+                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=, save_dir=save_dir, box=box)
 
