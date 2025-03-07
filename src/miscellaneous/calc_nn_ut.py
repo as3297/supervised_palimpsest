@@ -86,7 +86,7 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
     ys_ut = np.array(ys_ut).astype(np.uint32)
     print("Done loading undertext features")
     #extract page features
-    ut_chunk_size = 500
+    ut_chunk_size = 2000
     for folio_name in folio_names:
         features_page, xs_page, ys_page = load_page(data_dir, folio_name, modality)
         print(f"Done loading page {folio_name} features")
