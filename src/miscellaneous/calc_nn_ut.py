@@ -211,5 +211,5 @@ if __name__ == "__main__":
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
-                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=, save_dir=save_dir, box=box)
+                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir, box=box)
 
