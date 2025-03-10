@@ -180,15 +180,22 @@ def convert_float_in_dict(dict):
             dict[key] = float(value)
     return dict
 
-def load_confusion_matrix(restore_path):
+def load_channel_weights(restore_path):
     """Load confusion matrix"""
-    return np.load(os.path.join(restore_path, "baseline_confusion_matrix.npy"), allow_pickle=True)
+    channel_weights = np.load(os.path.join(restore_path, "baseline_confusion_matrix.npy"), allow_pickle=True)
+    channel_weights /= channel_weights.sum(axis=1, keepdims=True)
+    # perm_bias_weights[prediction,noisy_label] = log(P(noisy_label|prediction))
+    channel_weights = np.log(channel_weights + 1e-8)
+    return channel_weights
 
 def calculate_confusion_matrix(model,model_dir,X_train,Y_train,batch_size,nb_classes):
     """Calculate and save confusion_matrix"""
     ybaseline_predict = model.predict(X_train, batch_size=batch_size)
     ybaseline_predict = np.argmax(ybaseline_predict, axis=-1)
     baseline_confusion = np.zeros((nb_classes, nb_classes))
+    print("pred_labels",ybaseline_predict)
+    print("_______________")
+    print("org_labels",Y_train)
     for n, p in zip(Y_train, ybaseline_predict):
         baseline_confusion[p, n] += 1.
     np.save(os.path.join(model_dir, "baseline_confusion_matrix.npy"), baseline_confusion)

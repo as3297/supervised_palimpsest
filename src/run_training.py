@@ -19,9 +19,9 @@ def run_training():
     parser.add_argument('--optimizer_name', "-opt", type=str, default="adam", help='Name of the optimizer')
     parser.add_argument('--learning_rate', "-lr", type=float, default=0.00001, help='Learning rate')
     parser.add_argument('--dropout_rate', "-dropout", type=float, default=0.0, help='Dropout rate')
-    parser.add_argument('--label_smoothing', type=float, default=0.1, help='Label smoothing value')
+    parser.add_argument('--label_smoothing', type=float, default=0.0, help='Label smoothing value')
     parser.add_argument('--weight_decay', "-wdecay", type=float, default=0.0, help='Weight decay value')
-    parser.add_argument('--loss_name', "-loss",type=str, default="binary_crossentropy", help='Loss function name')
+    parser.add_argument('--loss_name', "-loss",type=str, default="sparce_categorical_crossentropy", help='Loss function name')
     parser.add_argument('--main_data_dir',"-datadir", type=str, default=r"D:", help='Main data directory path')
     parser.add_argument('--palimpsest_name', "-pname", type=str, default=r"Verona_msXL", help='Palimpsest name')
     parser.add_argument('--folios_train',"-ftrain", nargs='+', default=["msXL_335v_b"],
@@ -33,6 +33,9 @@ def run_training():
     parser.add_argument('--classes_dict', type=str, default='{"undertext_renn": 1, "not_undertext": 0}',
                         help='Classes dictionary')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience parameter')
+    parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=True, help='Enable or disable noise channel')
+    parser.add_argument("--restore_path", "-rep", action='store_true', default=r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\Verona_msXL\20250307-144511",
+                        help='Enable or disable noise channel')
 
     args = parser.parse_args()
     # Validate and normalize paths

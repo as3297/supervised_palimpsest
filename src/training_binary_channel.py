@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 from sklearn.metrics import confusion_matrix
 
-from model import build_model,build_model_with_noise_channel
+from model import build_model_multiclass,build_model_with_noise_channel
 from src.util import calculate_confusion_matrix
-from util import extend_json, save_json, convert_float_in_dict, load_confusion_matrix
+from util import extend_json, save_json, convert_float_in_dict, load_channel_weights
 from datetime import datetime
 import os
 from dataset import dataset
@@ -14,7 +14,7 @@ osp = os.path.join
 
 class PalGraph():
   def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,
-               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels):
+               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels,nb_classes):
     # Create an instance of the model
     self.nb_units_per_layer = nb_units_per_layer
     self.nb_layers = nb_layers
@@ -28,6 +28,8 @@ class PalGraph():
           reduction='sum_over_batch_size',
           name='binary_crossentropy'
       )
+    elif loss == "sparce_categorical_crossentropy":
+        self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='sum_over_batch_size', name='sparce_categorical_crossentropy')
 
     if optimizer_name == "adam":
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
@@ -35,32 +37,34 @@ class PalGraph():
         self.optimizer = tf.keras.optimizers.SGD(learning_rate= self.learning_rate)
 
     if restore_path is None:
-          self.model = build_model(nb_features,nb_units_per_layer, nb_layers, dropout_rate,add_noise_channels)
+          self.model = build_model_multiclass(nb_features,nb_units_per_layer, nb_layers, dropout_rate,nb_classes)
           self.model_dir = model_dir
+          self.model.compile(
+              optimizer=self.optimizer,
+              loss=self.loss_object,
+              loss_weights=None,
+              metrics=["accuracy"],
+          )
 
     else:
         self.model_dir = restore_path
-        self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
-        if add_noise_channels:
-            confusion_matrix = load_confusion_matrix(restore_path)
-            self.model = build_model_with_noise_channel(self.model,confusion_matrix=confusion_matrix)
 
-    if add_noise_channels:
-        # ignore baseline loss in training
-        BETA = 0.
-        self.model.compile(
-            optimizer=self.optimizer,
-            loss=self.loss_object,
-            loss_weights = [1. - BETA, BETA],
-            metrics=["accuracy"],
-        )
-    else:
-        self.model.compile(
-            optimizer=self.optimizer,
-            loss=self.loss_object,
-            loss_weights=None,
-            metrics=["accuracy"],
-        )
+        print(restore_path)
+        if add_noise_channels:
+            pretrained_model = build_model_multiclass(nb_features,nb_units_per_layer, nb_layers, dropout_rate,nb_classes)
+            pretrained_model.load_weights(os.path.join(restore_path,"model.h5"))
+            channel_weights = load_channel_weights(restore_path)
+            self.model = build_model_with_noise_channel(pretrained_model,channel_weights=channel_weights)
+            # ignore baseline loss in training
+            BETA = 0.
+            self.model.compile(
+                optimizer=self.optimizer,
+                loss=self.loss_object,
+                loss_weights=[1. - BETA, BETA],
+                metrics=["accuracy"],
+            )
+        else:
+            model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
 
 
     def restore_optimizer_state(self,model,optimizer):
@@ -121,9 +125,9 @@ def training(
             optimizer_name="adam",
             learning_rate=0.00001,
             dropout_rate=0.0,
-            label_smoothing=0.1,
+            label_smoothing=0.0,
             weight_decay=0.0,
-            loss_name="binary_crossentropy",
+            loss_name="sparce_categorical_crossentropy",
             main_data_dir=r"/projects/palimpsests",
             palimpsest_name=r"Verona_msXL",
             folios_train=["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
@@ -187,7 +191,7 @@ def training(
     print("nb_features",nb_features)
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
-                  dropout_rate,learning_rate,add_noise_channels)
+                  dropout_rate,learning_rate,add_noise_channels,len(classes_dict.keys()))
     #save model hyperparametrs
     save_training_parameters(gr, debugging, batch_size, epochs,nb_features,
                            learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience)
@@ -199,23 +203,23 @@ def training(
     if patience==-1:
         patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
+    checkpoint_filepath = os.path.join(model_dir,'model_{epoch:02d}.h5')
+    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        save_weights_only=True,
+        filepath=checkpoint_filepath,
+        save_freq='epoch',
+        epochs=15,
+    )
     history = gr.model.fit(dataset_train[0], dataset_train[1],
     epochs = epochs,
-    callbacks = [tensorboard_callback,earlystopping_callback],
+    callbacks = [tensorboard_callback,earlystopping_callback,model_checkpoint_callback],
     validation_data = (dataset_validation[0], dataset_validation[1]),)
 
     gr.model.save(os.path.join(gr.model_dir, "model.keras"))
     #save model as h5
-    gr.model.save(os.path.join(gr.model_dir, "model.h5"))
-    #save optimizer parameters as .npy
+    #gr.model.save(os.path.join(gr.model_dir, "model.h5"))
 
 
-    # Save optimizer parameters as .npy for future restoration
-    checkpoint = tf.train.Checkpoint(model=gr.model, optim=gr.optimizer)
-    manager = tf.train.CheckpointManager(checkpoint, gr.model_dir, max_to_keep=1)
-    manager.save()
-    
-    
     #save test and train metrics
     train_metrics = {
         "loss": history.history.get('loss'),
@@ -234,6 +238,10 @@ def training(
         dataset_train[1],
         batch_size,len(classes_dict.keys()))
     print("Confusion matrix",confusion_matrix)
+    #save model architecture to json
+    json_config = gr.model.to_json()
+    save_path = os.path.join(gr.model_dir, "model_architecture.json")
+    save_json(save_path, json_config)
 
 
 if __name__=="__main__":
