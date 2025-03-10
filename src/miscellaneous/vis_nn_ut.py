@@ -63,8 +63,28 @@ def create_gradient_colored_image(dict_folio, image_shape):
         #print(gradient_image[int(ys[i]), int(xs[i]),:].shape)
         #print(color[i,:].shape)
         gradient_image[int(ys[i]), int(xs[i]),:] = color[i,:]
-
     return gradient_image
+
+def crop_coord(dict_ut,box=None):
+    if box is None:
+        return dict_ut
+    xs_ut = np.array(dict_ut["xs_ut"])
+    ys_ut = np.array(dict_ut["ys_ut"])
+    xs_ut_coord = np.argwhere(np.logical_and(xs_ut>box[0],xs_ut<(box[2]+box[0])))
+    ys_ut_coord = np.argwhere(np.logical_and(ys_ut>box[1], ys_ut<(box[3]+box[1])))
+
+    # Find the overlap between xs_ut_coord and ys_ut_coord
+    overlapping_coords = np.intersect1d(np.squeeze(xs_ut_coord), np.squeeze(ys_ut_coord))
+
+    xs_ut = xs_ut[overlapping_coords]
+    ys_ut = ys_ut[overlapping_coords]
+    dist = np.array(dict_ut["dist"])[overlapping_coords]
+    xs = np.array(dict_ut["xs"])[overlapping_coords]
+    ys = np.array(dict_ut["ys"])[overlapping_coords]
+
+    return {"xs_ut":xs_ut,"ys_ut":ys_ut,"dist":dist,"xs":xs,"ys":ys}
+
+
 
 if __name__ == "__main__":
 
@@ -76,11 +96,12 @@ if __name__ == "__main__":
     class_name = "undertext"
     n = 3
     box = None
+    crop_box = None #[3095, 801, 1362, 453]
+    crop_box_str = "" if crop_box is None else "_"+"_".join(crop_box)
     distances_dir = os.path.join(root_dir,palimpsest_name,ut_folio_name,"distances")
 
-    for fpath in ["msXL_335v_b_msXL_318r_b_euclid_nn_3.pkl",
-                  "msXL_335v_b_msXL_315v_b_euclid_nn_3.pkl",
-                  "msXL_335v_b_msXL_335v_b_euclid_nn_3.pkl"]:
+
+    for fpath in ["msXL_335v_b_msXL_335v_b_euclid_nn_3.pkl"]:
                   #os.listdir(distances_dir):
         if not fpath.endswith(".pkl"):
             continue
@@ -89,6 +110,7 @@ if __name__ == "__main__":
         print(
             f"Processing file: {fpath} for folio: {folio_name}")
         dict_ut = read_pickle(os.path.join(distances_dir,fpath))
+        dict_ut = crop_coord(dict_ut,box=crop_box)
 
         im = io.imread(os.path.join(main_data_dir,folio_name,"mask", folio_name+"-undertext_black.png"), as_gray=True)
         im_zero = np.zeros(im.shape)
@@ -96,6 +118,7 @@ if __name__ == "__main__":
         dist_l, xs_l,ys_l, folio_name_l = [],[],[],[]
         xs_ut = dict_ut["xs_ut"]
         ys_ut = dict_ut["ys_ut"]
+
 
         dist = dict_ut["dist"]
         xs = dict_ut["xs"]
@@ -139,7 +162,7 @@ if __name__ == "__main__":
             idxs = np.argwhere(dict_ut["folio_names"][:,i] == folio_name)
             new_dict = {"xs":np.concatenate(dict_ut["xs"][idxs,i]),"ys":np.concatenate(dict_ut["ys"][idxs,i]),"idx":np.concatenate(dict_ut["idx"][idxs])}
             colored_image = create_gradient_colored_image(new_dict, image_shape)
-            output_path = os.path.join(distances_dir, folio_name+f"_coordinates_nn{i}.png")
+            output_path = os.path.join(distances_dir, folio_name+f"_coordinates_nn{i}{crop_box_str}.png")
             io.imsave(output_path, colored_image)
 
 

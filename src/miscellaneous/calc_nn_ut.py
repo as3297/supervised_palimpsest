@@ -56,9 +56,9 @@ def process_chunk(chunk_args):
     :param neighbors: Integer indicating the number of nearest neighbors to find.
     :return: Tuple containing the distances to the nearest neighbors and their corresponding indices.
     """
-    features_ut, features_page, xs, ys, n = chunk_args
+    features_ut, features_page, xs, ys, n,method = chunk_args
     # Finding indices of 3 nearest neighbors from features_page to features_ut
-    dist = distance.cdist(features_ut, features_page,'euclidean').astype(np.float32)  # Transposed comparison
+    dist = distance.cdist(features_ut, features_page,method).astype(np.float32)  # Transposed comparison
     n_nn_idx = np.argsort(dist, axis=1)[:, :n]
     dist = np.take_along_axis(dist, n_nn_idx, axis=1)# Picking 3 nearest neighbors
     xs = np.array([xs[n_nn_idx[i,:]] for i in range(len(features_ut))])
@@ -67,7 +67,8 @@ def process_chunk(chunk_args):
 
 # Helper function for processing chunks in parallel
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes, chunk_size,ut_chunk_size, save_dir,box=None,):
+def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes,
+                                   chunk_size,ut_chunk_size,save_dir,box=None,method="euclid"):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -98,13 +99,13 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
         ys = np.zeros((len(features_ut), n))
         for ut_chunk in range(0,len(features_ut),ut_chunk_size):
             end = min(ut_chunk+ut_chunk_size,len(features_ut))
-            dist_chunk,xs_chunk,ys_chunk =find_distance_btw_feat(features_ut[ut_chunk:end], features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size)
+            dist_chunk,xs_chunk,ys_chunk =find_distance_btw_feat(features_ut[ut_chunk:end], features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size,method)
             dist[ut_chunk:end] = dist_chunk
             xs[ut_chunk:end] = xs_chunk
             ys[ut_chunk:end] = ys_chunk
-
+            break
         dict_nn = {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
-        fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_euclid_nn_{n}.pkl")
+        fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_{method}_nn_{n}.pkl")
         save_pickle(fpath,dict_nn)
 
 
@@ -148,7 +149,7 @@ def process_generator(generator):
         iter += 1
     return dist_acc,xs_acc,ys_acc
 
-def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size):
+def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size,method):
     """
     :param features_ut: Feature set from the under-text section.
     :param xs_ut: X-coordinates associated with the under-text features.
@@ -167,7 +168,7 @@ def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page
     # Split features_page, xs_page, and ys_page into chunks
     chunks = [(features_ut, features_page[i:min(i + chunk_size, len(features_page))],
                xs_page[i:min(i + chunk_size, len(xs_page))],
-               ys_page[i:min(i + chunk_size, len(ys_page))],n)
+               ys_page[i:min(i + chunk_size, len(ys_page))],n,method)
               for i in range(0, len(features_page), chunk_size)]
 
     results = Parallel(n_jobs=nb_processes,return_as="generator_unordered")(delayed(process_chunk)(chunk) for chunk in chunks)
@@ -188,6 +189,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
     parser.add_argument("-r","--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
+    parser.add_argument("-m", "--metric", type=str, default="cosine", help="Metric for calculating distance")
     parser.add_argument("-p","--proces", type=int, default=4, help="Number run in parallel")
     parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
     parser.add_argument("-utch", "--utchunk", type=int, default=100,
@@ -199,15 +201,17 @@ if __name__ == "__main__":
     nb_processes = args.proces
     chunk_size = args.chunk
     ut_chunk_size = args.utchunk
+    method = args.metric
     main_data_dir = os.path.join(root_dir, palimpsest_name)
-    folio_names = [ "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+    folio_names = [ r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
     modality = "M"
     class_name = "undertext"
     n = 3
     box = None
 
+
     for folio_ut in folio_names:
-        save_dir = os.path.join(main_data_dir,folio_ut, "distances")
+        save_dir = os.path.join(main_data_dir,folio_ut, "distances"+"_"+method)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
