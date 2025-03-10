@@ -68,7 +68,7 @@ def process_chunk(chunk_args):
 # Helper function for processing chunks in parallel
 
 def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes,
-                                   chunk_size,ut_chunk_size,save_dir,box=None,method="euclid"):
+                                   chunk_size,ut_chunk_size,save_dir,method,debug=False,box=None):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -103,7 +103,8 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
             dist[ut_chunk:end] = dist_chunk
             xs[ut_chunk:end] = xs_chunk
             ys[ut_chunk:end] = ys_chunk
-            break
+            if debug:
+                break
         dict_nn = {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
         fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_{method}_nn_{n}.pkl")
         save_pickle(fpath,dict_nn)
@@ -176,7 +177,7 @@ def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page
 
     # Collect results from all chunks
     dist,xs,ys = process_generator(results)
-    print("Distance calculation complete")
+    print("Distance calculation for a ut chunk complete")
     if same_page:
         dist = dist[:, 1:]
         xs = xs[:, 1:]
@@ -192,7 +193,9 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--metric", type=str, default="cosine", help="Metric for calculating distance")
     parser.add_argument("-p","--proces", type=int, default=4, help="Number run in parallel")
     parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
-    parser.add_argument("-utch", "--utchunk", type=int, default=100,
+    parser.add_argument("-db", "--debug", action='store_true', default=False,
+                        help="If debug run only for one ut chunk")
+    parser.add_argument("-utch", "--utchunk", type=int, default=5,
                         help="Undertext pixels number for a chunk in distance computation")
     # 3. Parse the arguments
     args = parser.parse_args()
@@ -202,6 +205,7 @@ if __name__ == "__main__":
     chunk_size = args.chunk
     ut_chunk_size = args.utchunk
     method = args.metric
+    debug = args.debug
     main_data_dir = os.path.join(root_dir, palimpsest_name)
     folio_names = [ r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
     modality = "M"
@@ -215,5 +219,5 @@ if __name__ == "__main__":
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
-                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir, box=box)
+                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir,method=method,debug=debug, box=box)
 
