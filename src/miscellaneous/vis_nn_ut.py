@@ -5,7 +5,7 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(root_dir)
-from util import read_pickle
+from util import read_pickle,save_json
 import os
 from skimage import io
 import numpy as np
@@ -98,10 +98,11 @@ if __name__ == "__main__":
     box = None
     crop_box = None #[3095, 801, 1362, 453]
     crop_box_str = "" if crop_box is None else "_"+"_".join(crop_box)
-    distances_dir = os.path.join(root_dir,palimpsest_name,ut_folio_name,"distances")
+    method = "euclidean"
+    distances_dir = os.path.join(root_dir,palimpsest_name,ut_folio_name,f"distances_{method}")
 
 
-    for fpath in ["msXL_335v_b_msXL_335v_b_euclid_nn_3.pkl"]:
+    for fpath in [f"msXL_335v_b_msXL_335v_b_{method}_nn_3.pkl"]:
                   #os.listdir(distances_dir):
         if not fpath.endswith(".pkl"):
             continue
@@ -110,7 +111,10 @@ if __name__ == "__main__":
         print(
             f"Processing file: {fpath} for folio: {folio_name}")
         dict_ut = read_pickle(os.path.join(distances_dir,fpath))
+        save_json(os.path.join(distances_dir,fpath),dict_ut)
         dict_ut = crop_coord(dict_ut,box=crop_box)
+
+
 
         im = io.imread(os.path.join(main_data_dir,folio_name,"mask", folio_name+"-undertext_black.png"), as_gray=True)
         im_zero = np.zeros(im.shape)

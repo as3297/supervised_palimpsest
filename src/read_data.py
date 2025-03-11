@@ -1,5 +1,5 @@
 from pil_image_cube import ImageCubePILobject
-from msi_data_as_array import PointsfromMSI_PIL
+from msi_data_as_array import PointsfromMSI_PIL,FragmentfromMSI_PIL
 from pixel_coord import points_coord_in_bbox
 from util import read_json, read_band_list, read_split_box_coord
 import numpy as np
@@ -8,6 +8,26 @@ import os
 
 osp = os.path.join
 
+
+def read_msi_image_patch(main_directory, folio, modality,box):
+    """
+    Read msi image patch
+    :param main_directory: Directory path where the MSI images are stored.
+    :param folio: Identifier or name used to select the specific MSI image folder.
+    :param modality: Imaging modality type to filter or locate the desired MSI image.
+    :param box: Bounding box coordinates used to extract a specific fragment from the image.[left, upper, right, and lower]
+    :return: Processed MSI image fragment as a result of the box extraction.
+    """
+    im_msi_pil = read_msi_image_object(main_directory, folio, modality)
+    im_msi = FragmentfromMSI_PIL(im_msi_pil,box).ims_img
+    im_msi = np.reshape(im_msi, (-1, im_msi.shape[-1]))
+
+    # Generate the two lists of corresponding coordinates for x and y inside the box
+    x_coords = range(box[0], box[2])
+    y_coords = range(box[1], box[3])
+    # Generate the meshgrid of coordinates for pixels inside the bounding box
+    x_coords, y_coords = np.meshgrid(x_coords, y_coords)
+    return im_msi,x_coords.flatten().tolist(),y_coords.flatten().tolist()
 
 def read_msi_image_object(main_directory, folio, modality):
     """

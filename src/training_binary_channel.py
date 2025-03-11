@@ -130,16 +130,16 @@ def training(
             loss_name="sparce_categorical_crossentropy",
             main_data_dir=r"/projects/palimpsests",
             palimpsest_name=r"Verona_msXL",
-            folios_train=["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
-                          "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b",
-                          "msXL_344v_b"],
+            folios_train=["msXL_335v_b",],# r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+                          #"msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b",
+                          #"msXL_344v_b"],
             folios_val=[r"msXL_315r_b"],
             learning_rate_decay_epoch_step=0,
             patience=15,
             add_noise_channels = False,
             classes_dict={"undertext_renn": 1, "not_undertext": 0},
             restore_path=None,
-            debugging=False):
+            debug=False):
     """
     Trains a machine learning model on a specified dataset using given hyperparameters
     and saves the trained model to a specified directory.
@@ -184,6 +184,9 @@ def training(
     model_dir = os.path.join(model_dir, palimpsest_name, current_time)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
+    if debug:
+        folios_train = folios_train[:1]
+        folios_val = folios_val[:1]
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
     dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities)
     nb_features = dataset_train[0].shape[-1]
@@ -193,7 +196,7 @@ def training(
                 label_smoothing,loss_name,
                   dropout_rate,learning_rate,add_noise_channels,len(classes_dict.keys()))
     #save model hyperparametrs
-    save_training_parameters(gr, debugging, batch_size, epochs,nb_features,
+    save_training_parameters(gr, debug, batch_size, epochs,nb_features,
                            learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience)
     # same label distribution as in the train set
     log_dir = os.path.join(model_dir,'logs')

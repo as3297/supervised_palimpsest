@@ -4,7 +4,7 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(root_dir)
-from read_data import read_msi_image_object, read_subset_features
+from read_data import read_msi_image_object, read_subset_features, read_msi_image_patch
 from msi_data_as_array import FullImageFromPILImageCube
 from util import save_pickle
 from scipy.spatial import distance
@@ -67,8 +67,8 @@ def process_chunk(chunk_args):
 
 # Helper function for processing chunks in parallel
 
-def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_name,modality,n,nb_processes,
-                                   chunk_size,ut_chunk_size,save_dir,method,debug=False,box=None):
+def find_distance_btw_ut_and_folio(data_dir,folio_name, folio_names, class_name,modality,n,nb_processes,
+                                   chunk_size,ut_chunk_size,save_dir,method,read_from_mask,debug=False,box=None):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -81,33 +81,42 @@ def find_distance_btw_ut_and_folio(data_dir,ut_folio_name, folio_names, class_na
     :return: Dictionary containing distances between undertext features and page features for each folio, along with associated data.
     """
     #extract ut features
-    features_ut,xs_ut,ys_ut = read_subset_features(data_dir,ut_folio_name,class_name,modality,box)
+    if read_from_mask:
+        features_ut,xs_ut,ys_ut = read_subset_features(data_dir,folio_name,class_name,modality,box)
+    else:
+        features_ut, xs_ut, ys_ut = read_msi_image_patch(data_dir, folio_name, modality, box)
     features_ut = features_ut.astype(np.float32)
     xs_ut = np.array(xs_ut).astype(np.uint32)
     ys_ut = np.array(ys_ut).astype(np.uint32)
+    print(f"Nb of undertext features = {len(features_ut)}")
     print("Done loading undertext features")
     #extract page features
-    for folio_name in folio_names:
+    for cur_folio_name in folio_names:
         features_page, xs_page, ys_page = load_page(data_dir, folio_name, modality)
         print(f"Done loading page {folio_name} features")
         # increase number of pixel if the page of undertext is the same a page of calculated distances
         same_page = False
-        if folio_name == ut_folio_name:
+        if cur_folio_name == folio_name:
             same_page = True
         dist = np.zeros((len(features_ut), n))
         xs = np.zeros((len(features_ut), n))
         ys = np.zeros((len(features_ut), n))
+        idx = 0
+        nb_chunks = len(features_ut)//ut_chunk_size + 1
         for ut_chunk in range(0,len(features_ut),ut_chunk_size):
             end = min(ut_chunk+ut_chunk_size,len(features_ut))
             dist_chunk,xs_chunk,ys_chunk =find_distance_btw_feat(features_ut[ut_chunk:end], features_page, xs_page, ys_page, n, same_page,nb_processes,chunk_size,method)
             dist[ut_chunk:end] = dist_chunk
             xs[ut_chunk:end] = xs_chunk
             ys[ut_chunk:end] = ys_chunk
+            print(f"Distance calculation for {cur_folio_name} a {idx} ut chunk out of {nb_chunks} complete")
+            idx += 1
             if debug:
                 break
         dict_nn = {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
-        fpath = os.path.join(save_dir,ut_folio_name+"_"+folio_name+f"_{method}_nn_{n}.pkl")
+        fpath = os.path.join(save_dir,folio_name+"_"+cur_folio_name+f"_{method}_nn_{n}.pkl")
         save_pickle(fpath,dict_nn)
+
 
 
 def process_generator(generator):
@@ -152,15 +161,25 @@ def process_generator(generator):
 
 def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page,nb_processes,chunk_size,method):
     """
-    :param features_ut: Feature set from the under-text section.
-    :param xs_ut: X-coordinates associated with the under-text features.
-    :param ys_ut: Y-coordinates associated with the under-text features.
-    :param features_page: Feature set from the reference page.
-    :param xs_page: X-coordinates associated with the reference page features.
-    :param ys_page: Y-coordinates associated with the reference page features.
-    :param n: Number of nearest neighbors to retrieve.
-    :param same_page: Boolean flag indicating whether the under-text and reference features are from the same page.
-    :return: Dictionary containing the distances, and corresponding coordinates of the nearest neighbors.
+        Computes the distances between features of an under-text section and a reference page,
+    finding the nearest neighbors based on provided features and coordinates.
+    The function supports multiprocessing to enhance execution speed.
+    Args:
+    :param features_ut: Array or list containing feature vectors of the under-text section.
+    :param features_page: Array or list containing feature vectors of the reference page.
+    :param xs_page: List or array of X-coordinates corresponding to the reference page features.
+    :param ys_page: List or array of Y-coordinates corresponding to the reference page features.
+    :param n: Integer specifying the number of nearest neighbors to retrieve.
+    :param same_page: Boolean indicating whether the features are extracted from the same page.
+                      If True, the function adjusts the nearest neighbor retrieval process by
+                      ignoring the first neighbor (self-match).
+    :param nb_processes: Integer representing the number of parallel processes to use for execution.
+    :param chunk_size: Integer specifying the size of chunks to split the features_page data for parallel computation.
+    :param method: String specifying the method to use for distance computation (e.g., 'euclidean').
+    :return:
+        - dist: 2D numpy array where each row contains the computed distances to the nearest neighbors.
+        - xs: 2D numpy array where each row contains the X-coordinates of the nearest neighbors.
+        - ys: 2D numpy array where each row contains the Y-coordinates of the nearest neighbors.
     """
     #if same page as ut page extract more nearest neighbours and then ignore the first neighbour
     if same_page:
@@ -177,7 +196,7 @@ def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page
 
     # Collect results from all chunks
     dist,xs,ys = process_generator(results)
-    print("Distance calculation for a ut chunk complete")
+
     if same_page:
         dist = dist[:, 1:]
         xs = xs[:, 1:]
@@ -190,12 +209,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
     parser.add_argument("-r","--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
-    parser.add_argument("-m", "--metric", type=str, default="cosine", help="Metric for calculating distance")
+    parser.add_argument("-m", "--metric", type=str, default="euclidean", help="Metric for calculating distance, e.g. cosine, euclidean, mahalanobis,")
     parser.add_argument("-p","--proces", type=int, default=4, help="Number run in parallel")
     parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
     parser.add_argument("-db", "--debug", action='store_true', default=False,
                         help="If debug run only for one ut chunk")
-    parser.add_argument("-utch", "--utchunk", type=int, default=5,
+    parser.add_argument("-um", "--usemask", action='store_true', default=False,
+                        help="If true use ut mask for target features")
+    parser.add_argument("-b", "--box", nargs='+', default=[4446, 830, 266, 148],
+                        help="bounding box x, y, width,height")
+    parser.add_argument("-utch", "--utchunk", type=int, default=100,
                         help="Undertext pixels number for a chunk in distance computation")
     # 3. Parse the arguments
     args = parser.parse_args()
@@ -207,17 +230,21 @@ if __name__ == "__main__":
     method = args.metric
     debug = args.debug
     main_data_dir = os.path.join(root_dir, palimpsest_name)
+    read_from_mask = args.usemask
+    if len(args.box)>0:
+        box = tuple(map(int, args.box))
+        box = [box[0],box[1],box[2]+box[0],box[3]+box[1]]
+    else:
+        box = None
     folio_names = [ r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
     modality = "M"
     class_name = "undertext"
     n = 3
-    box = None
-
 
     for folio_ut in folio_names:
         save_dir = os.path.join(main_data_dir,folio_ut, "distances"+"_"+method)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
-                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir,method=method,debug=debug, box=box)
+                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir,method=method,read_from_mask=read_from_mask,debug=debug, box=box)
 

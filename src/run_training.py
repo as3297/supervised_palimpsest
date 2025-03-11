@@ -36,6 +36,7 @@ def run_training():
     parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=True, help='Enable or disable noise channel')
     parser.add_argument("--restore_path", "-rep", action='store_true', default=r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\Verona_msXL\20250307-144511",
                         help='Enable or disable noise channel')
+    parser.add_argument("--debug", "-deb", action='store_true', default=True, help='Reduce dataset size for debugging')
 
     args = parser.parse_args()
     # Validate and normalize paths
