@@ -40,29 +40,12 @@ def points_coord_in_bbox(fpath,bbox):
     :param bbox - [top,left,bottom,right] bbox coordinates that defines the range of dataset
     """
     coords = ClassCoord(fpath, 0).coords
+
+    coords = [(x, y) for x, y in coords if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]]
     xs,ys = map(list, zip(*coords))
 
-    nb_coords = len(coords)
-    idx_start = 0
-    idx_end = 0
-    for idx_x in range(nb_coords):
-        if xs[idx_x]>bbox[0]:
-          idx_start = idx_x
-          break
-    for idx_y in range(idx_start,nb_coords):
-        if ys[idx_y]>bbox[1]:
-          idx_start = idx_y
-          break
-    for idx_x in range(nb_coords-1,idx_start-1,-1):
-        if xs[idx_x]<bbox[2]:
-          idx_end = idx_x
-          break
-    for idx_y in range(nb_coords-1,idx_start-1,-1):
-        if ys[idx_y]<bbox[3]:
-          idx_end = idx_y
-          break
-    nb_coords = idx_end-idx_start
-    return xs[idx_start:idx_end], ys[idx_start:idx_end], nb_coords
+    nb_coords = len(xs)
+    return xs, ys, nb_coords
 
 if __name__=="__main__":
     pass
