@@ -5,7 +5,7 @@ import os
 
 
 
-def read_features(main_dir,folio_names,classes_dict,modalities):
+def read_features(main_dir,folio_names,classes_dict,modalities, box):
     """
     Reads and aggregates feature data for multiple classes and folio names.
 
@@ -22,7 +22,7 @@ def read_features(main_dir,folio_names,classes_dict,modalities):
     for class_name,class_idx in classes_dict.items():
         features_dict[class_idx] = []
         for folio_name in folio_names:
-            features,xs,ys = read_subset_features(main_dir,folio_name,class_name,modalities,None)
+            features,xs,ys = read_subset_features(main_dir,folio_name,class_name,modalities,box)
             features_dict[class_idx].append(features)
         features_dict[class_idx] = np.concatenate(features_dict[class_idx],0)
     return features_dict
@@ -61,7 +61,7 @@ def create_tf_dataset(features_train,labels_train,features_val,labels_val):
 
     return ds_train, ds_val
 
-def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality):
+def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,debugging=False):
     """
     Creates training and validation datasets by reading and processing feature data from the specified directories.
 
@@ -75,8 +75,12 @@ def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality):
     Returns:
         tuple: A tuple containing the processed training dataset and validation dataset.
     """
-    features_dict_train = read_features(main_dir,folio_names_train,class_names,modality)
-    features_dict_val = read_features(main_dir, folio_names_val, class_names, modality)
+    if debugging:
+        box = "val_bbox"
+    else:
+        box = None
+    features_dict_train = read_features(main_dir,folio_names_train,class_names,modality,box)
+    features_dict_val = read_features(main_dir, folio_names_val, class_names, modality,box)
 
     dataset_val = stack_features_labels(features_dict_val)
     dataset_train = stack_features_labels(features_dict_train)

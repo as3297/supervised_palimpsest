@@ -41,6 +41,12 @@ def points_coord_in_bbox(fpath,bbox):
     """
     coords = ClassCoord(fpath, 0).coords
 
+    try:
+        coords = [(x, y) for x, y in coords if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]]
+        xs, ys = map(list, zip(*coords))
+    except ValueError:
+        raise ValueError(
+        f"No coordinates of mask {fpath} in bbox {bbox}. Ensure the mask image and bounding box are correctly defined.")
     coords = [(x, y) for x, y in coords if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]]
     xs,ys = map(list, zip(*coords))
 

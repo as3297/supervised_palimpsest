@@ -61,6 +61,7 @@ def read_ot_mask(main_dir, palimpsest_name, folio_name,box):
 
 
 
+
 def read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box=None):
     """
     Reads X and Y coordinates for a given folio name, class, and image object based on a bounding box.
@@ -79,9 +80,12 @@ def read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box=None):
     If a bounding box is provided, the function will read and utilize it to determine the coordinates. If not, it will use the entire image dimensions.
     """
     if not box is None:
-        bbox_fpath = osp(main_dir, folio_name, "dataset_split.json")
-        bbox_dict = read_json(bbox_fpath)
-        bbox = read_split_box_coord(box, bbox_dict)
+        if type(box) is str:
+            bbox_fpath = osp(main_dir, folio_name, "dataset_split.json")
+            bbox_dict = read_json(bbox_fpath)
+            bbox = read_split_box_coord(box, bbox_dict)
+        else:
+            bbox = box
     else:
         bbox = [0,0,im_pil_ob.width-1,im_pil_ob.height-1]
 

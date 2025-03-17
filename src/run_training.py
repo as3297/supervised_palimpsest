@@ -33,10 +33,10 @@ def run_training():
     parser.add_argument('--classes_dict', type=str, default='{"undertext_renn": 1, "not_undertext": 0}',
                         help='Classes dictionary')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience parameter')
-    parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=True, help='Enable or disable noise channel')
-    parser.add_argument("--restore_path", "-rep", action='store_true', default=r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\Verona_msXL\20250307-144511",
+    parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=False, help='Enable or disable noise channel')
+    parser.add_argument("--restore_path", "-rep", action='store_true', default=False,
                         help='Enable or disable noise channel')
-    parser.add_argument("--debug", "-deb", action='store_true', default=True, help='Reduce dataset size for debugging')
+    parser.add_argument("--debug", "-deb", action='store_true', default=False, help='Reduce dataset size for debugging')
 
     args = parser.parse_args()
     # Validate and normalize paths

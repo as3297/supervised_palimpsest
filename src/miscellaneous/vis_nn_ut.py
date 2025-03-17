@@ -52,9 +52,9 @@ def create_gradient_colored_image(dict_folio, image_shape):
     # Calculate gradient RGB color based on pixel indices normalized to the range (0, 255)
     idx = idx/ len(idx)
 
-    r = (255 * np.maximum(0, np.minimum(1, 4 * np.abs(idx - 0.75) - 1))).astype(np.uint8)
-    g = (255 * np.maximum(0, np.minimum(1, 4 * np.abs(idx - 0.5) - 1))).astype(np.uint8)
-    b = (255 * np.maximum(0, np.minimum(1, 4 * np.abs(idx - 0.25) - 1))).astype(np.uint8)
+    r = (255 * (idx * 0.8 + 0.1)).astype(np.uint8)
+    g = (255 * (idx * 0.7 + 0.2)).astype(np.uint8)
+    b = (255 * (idx * 0.6 + 0.3)).astype(np.uint8)
 
     color = np.stack([r, g, b],axis=1)
 
@@ -85,6 +85,39 @@ def crop_coord(dict_ut,box=None):
     return {"xs_ut":xs_ut,"ys_ut":ys_ut,"dist":dist,"xs":xs,"ys":ys}
 
 
+# Filter all the xs and ys coordinates that are further than a radius from the xs_ut and ys_ut
+def filter_coordinates_within_radius(xs, ys, xs_ut, ys_ut, radius):
+    """
+    Filters the coordinates (xs, ys) and returns only those which are within a given radius
+    from the central points (xs_ut, ys_ut).
+
+    :param xs: Array of x-coordinates to filter
+    :param ys: Array of y-coordinates to filter
+    :param xs_ut: Array of x-coordinates of central points
+    :param ys_ut: Array of y-coordinates of central points
+    :param radius: Radius to determine the maximum allowed distance
+    :return: Filtered xs and ys arrays
+    """
+    # Calculate distances between each (xs, ys) point and the central points (xs_ut, ys_ut)
+    distances = np.sqrt((xs - xs_ut[:, np.newaxis]) ** 2 + (ys - ys_ut[:, np.newaxis]) ** 2)
+
+    # Find indices where distances are less than or equal to the radius
+    valid_indices = np.any(distances <= radius, axis=0)
+
+    # Filter the xs and ys arrays based on valid indices
+
+
+    return valid_indices
+def filter_dict_withing_radius(dict,xs_ut,ys_ut,radius,image_shape):
+    valid_indices = filter_coordinates_within_radius(new_dict["xs"], new_dict["ys"], xs_ut,ys_ut, radius)
+    xs_ut = xs_ut[valid_indices]
+    ys_ut = ys_ut[valid_indices]
+    colored_image = create_gradient_colored_image({"xs":xs_ut,"ys":ys_ut,"idx":valid_indices}, image_shape)
+    output_path = os.path.join(distances_dir, folio_name + f"_filtered_coordinates_org.png")
+    io.imsave(output_path, colored_image)
+
+
+
 
 if __name__ == "__main__":
 
@@ -111,7 +144,6 @@ if __name__ == "__main__":
         print(
             f"Processing file: {fpath} for folio: {folio_name}")
         dict_ut = read_pickle(os.path.join(distances_dir,fpath))
-        save_json(os.path.join(distances_dir,fpath),dict_ut)
         dict_ut = crop_coord(dict_ut,box=crop_box)
 
 
@@ -168,6 +200,7 @@ if __name__ == "__main__":
             colored_image = create_gradient_colored_image(new_dict, image_shape)
             output_path = os.path.join(distances_dir, folio_name+f"_coordinates_nn{i}{crop_box_str}.png")
             io.imsave(output_path, colored_image)
+            filter_dict_withing_radius(new_dict,xs_ut,ys_ut,1,image_shape)
 
 
 

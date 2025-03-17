@@ -2,7 +2,6 @@ import tensorflow as tf
 #from tensorflow import keras
 from tensorflow.keras import Model,Input
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, ReLU
-import numpy as np
 from noisy_labels.channel import Channel
 
 

@@ -1,25 +1,26 @@
 #!/bin/bash
 
 # Set default values for the arguments.
-EPOCHS=500
+EPOCHS=45
 BATCH_SIZE=512
 MODALITIES=("M")
 NB_NODES_IN_LAYER=512
 NB_LAYERS=4
 OPTIMIZER_NAME="adam"
-LEARNING_RATE=0.000001
+LEARNING_RATE=0.00001
 DROPOUT_RATE=0.0
-LABEL_SMOOTHING=0.1
+LABEL_SMOOTHING=0.0
 WEIGHT_DECAY=0.0
-LOSS_NAME="binary_crossentropy"
+LOSS_NAME="sparce_categorical_crossentropy"
 MAIN_DATA_DIR="/projects/palimpsests" #"D:"
 PALIMPSEST_NAME="Verona_msXL"
+PATIENCE=15
 FOLIOS_TRAIN=("msXL_335v_b" "msXL_315v_b" "msXL_318r_b" "msXL_318v_b" "msXL_319r_b" "msXL_319v_b" "msXL_322r_b" "msXL_322v_b" "msXL_323r_b" "msXL_334r_b" "msXL_334v_b" "msXL_344r_b")
 FOLIOS_VAL=("msXL_344v_b") #("msXL_315r_b")
 MODEL_DIR="/projects/supervised_palimpsest/training" #"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 LEARNING_RATE_DECAY_EPOCH_STEP=0
 CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
-PATIENCE=35
+
 
 python run_training.py --epochs $EPOCHS \
   --batch_size $BATCH_SIZE \

@@ -190,6 +190,9 @@ def load_channel_weights(restore_path):
 
 def calculate_confusion_matrix(model,model_dir,X_train,Y_train,batch_size,nb_classes):
     """Calculate and save confusion_matrix"""
+    if len(Y_train.shape)==2:
+        if Y_train.shape[1]==1:
+            Y_train = np.squeeze(Y_train)
     ybaseline_predict = model.predict(X_train, batch_size=batch_size)
     ybaseline_predict = np.argmax(ybaseline_predict, axis=-1)
     baseline_confusion = np.zeros((nb_classes, nb_classes))
