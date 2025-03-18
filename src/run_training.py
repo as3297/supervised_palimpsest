@@ -34,7 +34,7 @@ def run_training():
                         help='Classes dictionary')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience parameter')
     parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=False, help='Enable or disable noise channel')
-    parser.add_argument("--restore_path", "-rep", action='store_true', default=False,
+    parser.add_argument("--restore_path", "-rep", type=str, default=None,
                         help='Enable or disable noise channel')
     parser.add_argument("--debug", "-deb", action='store_true', default=False, help='Reduce dataset size for debugging')
 
@@ -44,6 +44,7 @@ def run_training():
     # Convert the JSON string to a Python dictionary
     classes_dict = json.loads(args.classes_dict)
     args.classes_dict = classes_dict
+
     # Pass all parsed arguments to the training function as keyword arguments
     for key, value in args.__dict__.items():
         print(key, value, type(value))
