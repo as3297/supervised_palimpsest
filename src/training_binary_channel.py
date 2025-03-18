@@ -1,10 +1,6 @@
-import numpy as np
 import tensorflow as tf
-from sklearn.metrics import confusion_matrix
-
 from model import build_model_multiclass,build_model_with_noise_channel
-from src.util import calculate_confusion_matrix
-from util import extend_json, save_json, convert_float_in_dict, load_channel_weights
+from util import extend_json, save_json, convert_float_in_dict, load_channel_weights,calculate_confusion_matrix
 from datetime import datetime
 import os
 from dataset import dataset
