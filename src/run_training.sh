@@ -14,12 +14,13 @@ WEIGHT_DECAY=0.0
 LOSS_NAME="sparce_categorical_crossentropy"
 MAIN_DATA_DIR="/projects/palimpsests" #"D:"
 PALIMPSEST_NAME="Verona_msXL"
-PATIENCE=15
+PATIENCE=-1
 FOLIOS_TRAIN=("msXL_335v_b" "msXL_315v_b" "msXL_318r_b" "msXL_318v_b" "msXL_319r_b" "msXL_319v_b" "msXL_322r_b" "msXL_322v_b" "msXL_323r_b" "msXL_334r_b" "msXL_334v_b" "msXL_344r_b")
 FOLIOS_VAL=("msXL_344v_b") #("msXL_315r_b")
 MODEL_DIR="/projects/supervised_palimpsest/training" #"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 LEARNING_RATE_DECAY_EPOCH_STEP=0
 CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
+RESTORE_PATH="/home/anna/projects/supervised_palimpsest/training/Verona_msXL/20250318-170853"
 
 
 python run_training.py --epochs $EPOCHS \
@@ -40,4 +41,6 @@ python run_training.py --epochs $EPOCHS \
   --model_dir $MODEL_DIR \
   --learning_rate_decay_epoch_step $LEARNING_RATE_DECAY_EPOCH_STEP \
   --classes_dict $CLASSES_DICT \
-  --patience $PATIENCE > logs.txt
+  --patience $PATIENCE \
+  --restore_path $RESTORE_PATH \
+  --add_noise_channels > logs.txt

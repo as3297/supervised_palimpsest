@@ -59,7 +59,7 @@ class PalGraph():
                 metrics=["accuracy"],
             )
         else:
-            model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
+            self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
         print("Restored model from the path: ", self.restore_path, " ...")
 
 
@@ -202,16 +202,9 @@ def training(
     if patience==-1:
         patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
-    checkpoint_filepath = os.path.join(model_dir,'model_{epoch:02d}.h5')
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        save_weights_only=True,
-        filepath=checkpoint_filepath,
-        save_freq='epoch',
-        epochs=15,
-    )
     history = gr.model.fit(dataset_train[0], dataset_train[1],
     epochs = epochs,
-    callbacks = [tensorboard_callback,earlystopping_callback,model_checkpoint_callback],
+    callbacks = [tensorboard_callback,earlystopping_callback],
     validation_data = (dataset_validation[0], dataset_validation[1]),)
 
     gr.model.save(os.path.join(gr.model_dir, "model.keras"))
