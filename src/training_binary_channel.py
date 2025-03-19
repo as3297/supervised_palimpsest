@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 from dataset import dataset
 from noisy_labels.channel import Channel
+from tensorflow.keras.models import load_model
 
 osp = os.path.join
 
@@ -46,8 +47,8 @@ class PalGraph():
 
     else:
         if add_noise_channels:
-            pretrained_model = build_model_multiclass(nb_features,nb_units_per_layer, nb_layers, dropout_rate,nb_classes)
-            pretrained_model.load_weights(os.path.join(restore_path,"model.keras"),custom_objects={"Channel": Channel})
+
+            pretrained_model = load_model(os.path.join(restore_path,"model.keras"),custom_objects={"Channel": Channel})
             channel_weights = load_channel_weights(restore_path)
             self.model = build_model_with_noise_channel(pretrained_model,channel_weights=channel_weights)
             # ignore baseline loss in training
@@ -59,7 +60,7 @@ class PalGraph():
                 metrics=["accuracy"],
             )
         else:
-            self.model = tf.keras.models.load_model(os.path.join(restore_path, 'model.keras'))
+            self.model = load_model(os.path.join(restore_path, 'model.keras'))
         print("Restored model from the path: ", self.restore_path, " ...")
 
 
