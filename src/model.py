@@ -24,7 +24,7 @@ def build_model(nb_features,nb_units_per_layer,nb_layers,dropout_rate,batch_norm
         x = BatchNormalization(axis=1,name="batchnorm_{}".format(layer_idx))(x)
       x = ReLU(name="relu_{}".format(layer_idx))(x)
       x = Dropout(dropout_rate,name="dropout_{}".format(layer_idx))(x)
-    outputs = Dense(1, name="predictions",activation="sigmoid",kernel_initializer="he_normal",)(x)
+    outputs = Dense(1, name="predictions", activation="sigmoid",kernel_initializer="he_normal",)(x)
     return Model(inputs=inputs, outputs=outputs)
 
 def build_model_multiclass(nb_features,nb_units_per_layer,nb_layers,dropout_rate,nb_classes,batch_norm=False):
