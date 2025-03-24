@@ -65,6 +65,8 @@ def read_json(fpath):
         return {}
 
 def read_band_list(fpath,modalities):
+    if not os.path.isfile(fpath):
+        raise FileNotFoundError(f"File not found: {fpath}")
     with open(fpath, 'r') as f:
         lines = f.readlines()
     bands = []
