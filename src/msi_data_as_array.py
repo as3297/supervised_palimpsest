@@ -1,9 +1,13 @@
 import numpy as np
-from pil_image_cube import ImageCubePILobject
-from pixel_coord import ClassCoord
+import os, sys
+from PIL import ImageOps
+
+from src.pil_image_cube import ImageCubePILobject
+from src.pixel_coord import ClassCoord
 import os
-from util import read_json
+from src.util import read_json
 import copy
+from itertools import repeat
 
 osp = os.path.join
 class NormalizingGray():
@@ -107,6 +111,8 @@ class BboxWindow(CoordsWindow):
         """
         super().__init__(pil_msi_obj)
         self.bbox = bbox # left, upper, right, and lower pixel coordinate
+        if bbox[2]>=self.width or bbox[3]>=self.height:
+            raise ValueError(f"Error right top window corner {bbox[2],bbox[3]} coordinate exceeds the image size {self.pil_msi_obj.width,self.pil_msi_obj.height}")
         self.width = self.bbox[2] - self.bbox[0]
         self.height = self.bbox[3] - self.bbox[1]
         self.pil_msi_img = self.read_fragment()
@@ -129,8 +135,6 @@ class PointsWindow(CoordsWindow):
         :param bbox:
         """
         super().__init__(pil_msi_obj)
-        self.width = None
-        self.height = None
         self.points_coord = points_coord
         self.nb_points = len(self.points_coord)
 
@@ -211,6 +215,67 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
             points_per_band = list(map(im_band.getpixel,self.points_coord))
             points[band_idx] = points_per_band
         return points
+
+class PatchesfromMSI_PIL(DataFromPILImageCube):
+    def __init__(self,pil_msi_obj: ImageCubePILobject,points_coord,win):
+        """
+        Read MSI patches around the points
+
+        """
+        super().__init__(pil_msi_obj)
+        self.points_coord = points_coord
+        self.half_win = win // 2
+        self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
+        self.unstretch_ims_imgs = self.convert_pil_points_to_patches(self.pil_msi_obj)
+        self.ims_imgs = self.standartize(self.unstretch_ims_imgs)
+        self.ims_imgs = np.transpose(self.ims_imgs, axes=[1, 2, 3, 0])
+
+    def read_band_fragment(self,point_coord,im_band):
+        """
+        Read image extracted from bounding box
+        :return: array with dim [nb_bands,nb_points]
+        """
+
+        img_width, img_height = im_band.size
+
+        # Adjust bounding box to stay within image bounds
+        left = max(0, point_coord[0] - self.half_win)
+        upper = max(0, point_coord[1] - self.half_win)
+        right = min(img_width, point_coord[0] + self.half_win + 1)
+        lower = min(img_height, point_coord[1] + self.half_win + 1)
+
+        if left>=right or upper>=lower:
+            raise ValueError(f"Error left upper window corner {left,upper} coordinate exceeds the image size {self.pil_msi_obj.width,self.pil_msi_obj.height}")
+
+        # Crop the fragment
+        fragment = im_band.crop((left, upper, right, lower))
+
+        # Calculate padding sizes
+        pad_left = max(0, self.half_win - point_coord[0])
+        pad_top = max(0, self.half_win - point_coord[1])
+        pad_right = max(0, (point_coord[0] + self.half_win + 1) - img_width)
+        pad_bottom = max(0, (point_coord[1] + self.half_win + 1) - img_height)
+
+        # Pad the fragment if necessary
+        if any((pad_left, pad_top, pad_right, pad_bottom)):
+            fragment = ImageOps.expand(fragment, border=(pad_left, pad_top, pad_right, pad_bottom), fill=0)
+
+        return np.array(fragment)
+
+
+    def convert_pil_points_to_patches(self,pil_msi_obj):
+        """
+        Read values extracted from points
+        :param points_coord:
+        :return: array with dim [nb_bands,nb_points]
+        """
+        win = self.half_win * 2 + 1
+        patchs = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points,win,win])
+        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
+            fragments_per_band = list(map(self.read_band_fragment,self.points_coord,repeat(im_band)))
+            patchs[band_idx,:,:,:] = np.stack(fragments_per_band,axis=0)
+        return patchs
+
 
 class PointfromMSI_PIL(DataFromPILImageCube):
     def __init__(self,pil_msi_obj: ImageCubePILobject,point_coord):
