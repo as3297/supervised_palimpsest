@@ -3,8 +3,6 @@ from read_data import read_subset_features
 import tensorflow as tf
 import os
 
-
-
 def read_features(main_dir,folio_names,classes_dict,modalities, box):
     """
     Reads and aggregates feature data for multiple classes and folio names.
@@ -49,17 +47,6 @@ def stack_features_labels(features_dict):
     dataset = np.concatenate(dataset,0)
     labels = np.concatenate(labels,0)[:,np.newaxis]
     return dataset,labels
-
-def create_tf_dataset(features_train,labels_train,features_val,labels_val):
-    """
-
-    """
-    ds_train = tf.data.Dataset.from_tensor_slices({"features": features_train, "label": labels_train})
-    ds_train = ds_train.shuffle(BUFFER_SIZE).repeat()
-
-    ds_val = tf.data.Dataset.from_tensor_slices({"features": features_val, "label": labels_val})
-
-    return ds_train, ds_val
 
 def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,debugging=False):
     """
