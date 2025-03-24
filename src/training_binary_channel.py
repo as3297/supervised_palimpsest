@@ -198,7 +198,7 @@ def training(
     # same label distribution as in the train set
     log_dir = os.path.join(model_dir,'logs')
     #create the TensorBoard callback
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0,update_freq='epoch')
     #create the Early Stopping callback
     if patience==-1:
         patience=epochs
@@ -223,7 +223,7 @@ def training(
         "val_accuracy": history.history.get('val_accuracy')
     }
     a = "noise_channel" if add_noise_channels else ""
-    metrics_path = os.path.join(gr.model_dir, "train_val_metrics" + a + ".json")
+    metrics_path = os.path.join(gr.model_dir, "train_val_loss_history" + a + ".json")
     save_json( metrics_path,{"train_metrics": train_metrics, "val_metrics": val_metrics},)
     if not add_noise_channels:
         confusion_matrix = calculate_confusion_matrix(
