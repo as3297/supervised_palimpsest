@@ -1,10 +1,10 @@
 from PIL import Image
 import os
-from pixel_coord import ClassCoord
+from src.util import read_band_list
 
 
 class ImageCubePILobject:
-    def __init__(self,folio_dir,folio_name,band_list,rotate_angle):
+    def __init__(self,folio_dir,folio_name,modalities,rotate_angle):
         """
         Read MSI image cube as a list of PIL images from a dir with stored image bands as tif images.
         The folder should contain only images of actual bands.
@@ -12,17 +12,13 @@ class ImageCubePILobject:
         where msXL_315r_b - folio name, M0365UV - band name, 01 - band index.
         :param image_dir: directory with tif image of palimpsest
         :param folio_name: name of the folio
-        :param band_list: list of bands
+        :param modalities: list of modalities
         :param coord: (left, upper, right, lower) tuple of bounding box coordinates
         """
         self.folio_dir = folio_dir
         self.image_dir = os.path.join(folio_dir, folio_name)
         self.folio_name = folio_name
-        if len(band_list)==0:
-            for fname in os.listdir(self.image_dir):
-                if ".tif" in fname:
-                    band_list.append(fname[:-4])
-        self.band_list = band_list
+        self.band_list = read_band_list(self.image_dir, modalities)
         self.rotate_angle = rotate_angle
         self.pil_msi_img = self.read_msi_image_object()
         self.width, self.height = self.pil_msi_img[0].size
@@ -54,9 +50,9 @@ class ImageCubePILobject:
             band_obj.close()
 
 class ThumbnailMSI_PIL(ImageCubePILobject):
-    def __init__(self,image_dir,folio_name,band_list,rotate_angle,scale_ratio):
+    def __init__(self,image_dir,folio_name,modalities,rotate_angle,scale_ratio):
         """Resize msi_img_obj"""
-        super().__init__(image_dir,folio_name,band_list,rotate_angle)
+        super().__init__(image_dir,folio_name,modalities,rotate_angle)
         self.width = self.width // scale_ratio
         self.height = self.height // scale_ratio
         self.msi_img_thumbnail = self.thumbnail_msi()

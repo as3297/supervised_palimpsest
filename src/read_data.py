@@ -1,7 +1,7 @@
 from pil_image_cube import ImageCubePILobject
 from msi_data_as_array import PointsfromMSI_PIL,FragmentfromMSI_PIL
 from pixel_coord import points_coord_in_bbox
-from util import read_json, read_band_list, read_split_box_coord
+from util import read_json, read_split_box_coord
 import numpy as np
 import skimage.io as io
 import os
@@ -36,15 +36,13 @@ def read_msi_image_object(main_directory, folio, modality):
     Parameters:
     main_directory (str): The main directory path containing the necessary data files.
     folio (str): The name of the folio to read.
-    modality (str): The modality to be used for reading the band list.
+    modalities list (str): The modality to be used for reading the band list.
 
     Returns:
     ImageCubePILobject: An object containing the image data and associated bands.
     """
-    band_list_file = osp(main_directory, "band_list.txt")
-    band_list = read_band_list(band_list_file, modality)
     rotate_angle = 0  # Assigning a default rotate angle
-    image_cube_pil_object = ImageCubePILobject(main_directory, folio, band_list, rotate_angle)
+    image_cube_pil_object = ImageCubePILobject(main_directory, folio, modality, rotate_angle)
     return image_cube_pil_object
 
 def read_ot_mask(main_dir, palimpsest_name, folio_name,box):
