@@ -1,7 +1,7 @@
-from pil_image_cube import ImageCubePILobject
-from msi_data_as_array import PointsfromMSI_PIL,FragmentfromMSI_PIL
-from pixel_coord import points_coord_in_bbox
-from util import read_json, read_split_box_coord
+from src.pil_image_cube import ImageCubePILobject
+from src.msi_data_as_array import PointsfromMSI_PIL,FragmentfromMSI_PIL,PatchesfromMSI_PIL
+from src.pixel_coord import points_coord_in_bbox
+from src.util import read_json, read_split_box_coord
 import numpy as np
 import skimage.io as io
 import os
@@ -121,6 +121,40 @@ def read_subset_features(main_dir,folio_name,class_name,modality,box=None):
     xs,ys = read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box)
     points_object = PointsfromMSI_PIL(pil_msi_obj=im_pil_ob, points_coord= list(zip(xs,ys)))
     features = points_object.points
+    return features,xs,ys
+
+def read_subset_features_patches(main_dir,folio_name,class_name,modality,win,box=None):
+    """
+    Reads subset of windows around every pixel from a given MSI (Mass Spectrometry Imaging) image dataset.
+
+    Parameters:
+    main_dir: str
+        The main directory path containing the dataset.
+    folio_name: str
+        The name of the folio or folder containing specific image files.
+    class_name: str
+        The name of the classification or label associated with the data.
+    modality: str
+        The imaging modality name (e.g., intensity or ion mode).
+    win: int
+        Side length of square window around every pixel
+    box: Optional[tuple], default=None
+        A bounding box defined by top-left and bottom-right coordinates to restrict the area of interest. If None, the entire region is considered.
+
+    Returns:
+    tuple
+        A tuple containing:
+            - features: list
+                Extracted features from the specified coordinates in the image.
+            - xs: list
+                X-coordinates of the extracted points.
+            - ys: list
+                Y-coordinates of the extracted points.
+    """
+    im_pil_ob = read_msi_image_object(main_dir,folio_name,modality)
+    xs,ys = read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box)
+    points_object = PatchesfromMSI_PIL(pil_msi_obj=im_pil_ob, points_coord= list(zip(xs,ys)),win=win)
+    features = points_object.ims_imgs
     return features,xs,ys
 
 def read_rectengular_patch_coord(main_dir,palimpsest_name,folio_name,patch_name):

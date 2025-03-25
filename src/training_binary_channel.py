@@ -12,7 +12,7 @@ osp = os.path.join
 
 class PalGraph():
   def __init__(self,nb_features,nb_units_per_layer,model_dir,nb_layers,restore_path,
-               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels,nb_classes):
+               optimizer_name,label_smoothing,loss,dropout_rate,learning_rate,add_noise_channels,nb_classes,win):
     # Create an instance of the model
     self.nb_units_per_layer = nb_units_per_layer
     self.nb_layers = nb_layers
@@ -21,6 +21,7 @@ class PalGraph():
     self.add_noise_channels = add_noise_channels
     self.model_dir = model_dir
     self.restore_path = restore_path
+    self.win = win
     if loss == "binary_crossentropy":
       self.loss_object = tf.keras.losses.BinaryCrossentropy(
           from_logits=False,
@@ -37,7 +38,7 @@ class PalGraph():
         self.optimizer = tf.keras.optimizers.SGD(learning_rate= self.learning_rate)
 
     if restore_path is None:
-          self.model = build_model_multiclass(nb_features,nb_units_per_layer, nb_layers, dropout_rate,nb_classes)
+          self.model = build_model_multiclass(nb_features,nb_units_per_layer, nb_layers, dropout_rate,nb_classes,self.win)
           self.model.compile(
               optimizer=self.optimizer,
               loss=self.loss_object,
@@ -71,7 +72,7 @@ class PalGraph():
 
 
 def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step,
-                             dropout_rate,label_smoothing,weight_decay,patience):
+                             dropout_rate,label_smoothing,weight_decay,patience,win):
   d = {}
   d["restore_path"] = gr.restore_path
   d["debugging"] = debugging
@@ -91,6 +92,11 @@ def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learn
   d["dropout_rate"] = float(dropout_rate)
   d["patience"] = int(patience)
   d["add_noise_channels"] = gr.add_noise_channels
+  d["patch_size"] = int(win+1)
+  if win > 0:
+      d["model_base_class"] = "cnn"
+  else:
+      d["model_base_class"] = "mlp"
 
   save_path = osp(gr.model_dir,"training_parameters.json")
   if not os.path.exists(save_path):
@@ -123,6 +129,7 @@ def training(
             learning_rate=0.00001,
             dropout_rate=0.0,
             label_smoothing=0.0,
+            window = 10,
             weight_decay=0.0,
             loss_name="sparce_categorical_crossentropy",
             main_data_dir=r"/projects/palimpsests",
@@ -185,16 +192,16 @@ def training(
         folios_train = folios_train[:1]
         folios_val = folios_val[:1]
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
-    dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities)
+    dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
     nb_features = dataset_train[0].shape[-1]
 
     print("nb_features",nb_features)
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
-                  dropout_rate,learning_rate,add_noise_channels,len(classes_dict.keys()))
+                  dropout_rate,learning_rate,add_noise_channels,len(classes_dict.keys()),window)
     #save model hyperparametrs
     save_training_parameters(gr, debug, batch_size, epochs,nb_features,
-                           learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience)
+                           learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience,window)
     # same label distribution as in the train set
     log_dir = os.path.join(model_dir,'logs')
     #create the TensorBoard callback
@@ -203,10 +210,16 @@ def training(
     if patience==-1:
         patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
-    history = gr.model.fit(dataset_train[0], dataset_train[1],
-    epochs = epochs,
-    callbacks = [tensorboard_callback,earlystopping_callback],
-    validation_data = (dataset_validation[0], dataset_validation[1]),)
+    if len(folios_val)==0:
+        history = gr.model.fit(dataset_train[0], dataset_train[1],
+                               epochs=epochs,
+                               callbacks=[tensorboard_callback, earlystopping_callback],
+                               validation_split=0.2, )
+    else:
+        history = gr.model.fit(dataset_train[0], dataset_train[1],
+        epochs = epochs,
+        callbacks = [tensorboard_callback,earlystopping_callback],
+        validation_data = (dataset_validation[0], dataset_validation[1]),)
 
     gr.model.save(os.path.join(gr.model_dir, "model.keras"))
     #save model as h5

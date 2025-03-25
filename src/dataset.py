@@ -1,9 +1,8 @@
 import numpy as np
-from read_data import read_subset_features
-import tensorflow as tf
+from src.read_data import read_subset_features,read_subset_features_patches
 import os
 
-def read_features(main_dir,folio_names,classes_dict,modalities, box):
+def read_features(main_dir,folio_names,classes_dict,modalities, box,win):
     """
     Reads and aggregates feature data for multiple classes and folio names.
 
@@ -12,6 +11,8 @@ def read_features(main_dir,folio_names,classes_dict,modalities, box):
     folio_names: A list of folder or file names to read features from.
     classes_dict: A dictionary mapping class names to corresponding class indices.
     modalities: Modalities to be included in the feature reading process.
+    win int
+        if higher then zero then extract patches around the points with size (win+1,win+1)
 
     Returns:
     A dictionary where keys are class indices (from classes_dict) and values are concatenated feature arrays corresponding to those class indices.
@@ -20,7 +21,10 @@ def read_features(main_dir,folio_names,classes_dict,modalities, box):
     for class_name,class_idx in classes_dict.items():
         features_dict[class_idx] = []
         for folio_name in folio_names:
-            features,xs,ys = read_subset_features(main_dir,folio_name,class_name,modalities,box)
+            if win>0:
+                features,xs,ys = read_subset_features_patches(main_dir,folio_name,class_name,modalities,win,box)
+            else:
+                features,xs,ys = read_subset_features(main_dir,folio_name,class_name,modalities,box)
             features_dict[class_idx].append(features)
         features_dict[class_idx] = np.concatenate(features_dict[class_idx],0)
     return features_dict
@@ -48,7 +52,7 @@ def stack_features_labels(features_dict):
     labels = np.concatenate(labels,0)[:,np.newaxis]
     return dataset,labels
 
-def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,debugging=False):
+def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,win, debugging=False):
     """
     Creates training and validation datasets by reading and processing feature data from the specified directories.
 
@@ -66,8 +70,8 @@ def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,debu
         box = "val_bbox"
     else:
         box = None
-    features_dict_train = read_features(main_dir,folio_names_train,class_names,modality,box)
-    features_dict_val = read_features(main_dir, folio_names_val, class_names, modality,box)
+    features_dict_train = read_features(main_dir,folio_names_train,class_names,modality,box,win)
+    features_dict_val = read_features(main_dir, folio_names_val, class_names, modality,box,win)
 
     dataset_val = stack_features_labels(features_dict_val)
     dataset_train = stack_features_labels(features_dict_train)

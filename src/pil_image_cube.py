@@ -18,7 +18,7 @@ class ImageCubePILobject:
         self.folio_dir = folio_dir
         self.image_dir = os.path.join(folio_dir, folio_name)
         self.folio_name = folio_name
-        self.band_list = read_band_list(self.image_dir, modalities)
+        self.band_list = read_band_list(os.path.join(self.folio_dir,"band_list.txt"), modalities)
         self.rotate_angle = rotate_angle
         self.pil_msi_img = self.read_msi_image_object()
         self.width, self.height = self.pil_msi_img[0].size

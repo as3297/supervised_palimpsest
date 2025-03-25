@@ -30,13 +30,14 @@ def run_training():
 
     parser.add_argument('--model_dir',"-mdir", type=str, default=r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", help='Palimpsest model parent directory')
     parser.add_argument('--learning_rate_decay_epoch_step', type=int, default=0, help='Learning rate decay step')
-    parser.add_argument('--classes_dict', type=str, default='{"undertext_renn": 1, "not_undertext": 0}',
+    parser.add_argument('--classes_dict', type=str, default='{"undertext": 1, "not_undertext": 0}',
                         help='Classes dictionary')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience parameter')
+    parser.add_argument('--window', type=int, default=10, help='Size of window around the pixel of interest, the whole patch areas is ((win+1)*(win+1))')
     parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=False, help='Enable or disable noise channel')
     parser.add_argument("--restore_path", "-rep", type=str, default=None,
                         help='Enable or disable noise channel')
-    parser.add_argument("--debug", "-deb", action='store_true', default=False, help='Reduce dataset size for debugging')
+    parser.add_argument("--debug", "-deb", action='store_true', default=True, help='Reduce dataset size for debugging')
 
     args = parser.parse_args()
     # Validate and normalize paths

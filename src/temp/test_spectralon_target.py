@@ -1,7 +1,5 @@
 
 import matplotlib.pyplot as plt
-# Set a backend explicitly (optional if not pre-configured)
-matplotlib.use("TkAgg")  # Use any supported interactive backend, e.g., TkAgg or Qt5Agg
 import numpy as np
 from read_data import read_subset_features,read_msi_image_object
 from msi_data_as_array import FragmentfromMSI_PIL,NormalizingGray
