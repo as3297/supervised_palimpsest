@@ -71,10 +71,13 @@ def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,win,
     else:
         box = None
     features_dict_train = read_features(main_dir,folio_names_train,class_names,modality,box,win)
-    features_dict_val = read_features(main_dir, folio_names_val, class_names, modality,box,win)
-
-    dataset_val = stack_features_labels(features_dict_val)
     dataset_train = stack_features_labels(features_dict_train)
+    if len(folio_names_val)>0:
+        features_dict_val = read_features(main_dir, folio_names_val, class_names, modality,box,win)
+        dataset_val = stack_features_labels(features_dict_val)
+    else:
+        dataset_val = None
+
     return dataset_train,dataset_val
 
 

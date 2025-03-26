@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 import numpy as np
 from joblib import Parallel
-from src.miscellaneous.calc_nn_ut import find_distance_btw_feat
+from src.miscellaneous.calc_nn_for_all_pages import find_distance_btw_feat
 
 
 class TestCalcNnUt(unittest.TestCase):
