@@ -43,6 +43,5 @@ python run_training.py --epochs $EPOCHS \
   --learning_rate_decay_epoch_step $LEARNING_RATE_DECAY_EPOCH_STEP \
   --classes_dict $CLASSES_DICT \
   --patience $PATIENCE \
-  --restore_path $RESTORE_PATH \
   --add_noise_channels \
   --windows $WINDOWS > logs.txt
