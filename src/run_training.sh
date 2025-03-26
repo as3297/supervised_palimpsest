@@ -21,7 +21,7 @@ MODEL_DIR="/projects/supervised_palimpsest/training" #"c:\Data\PhD\ML_palimpsest
 LEARNING_RATE_DECAY_EPOCH_STEP=0
 CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
 RESTORE_PATH=""
-WINDOWS=0
+WINDOW=0
 
 
 python run_training.py --epochs $EPOCHS \
@@ -44,4 +44,4 @@ python run_training.py --epochs $EPOCHS \
   --classes_dict $CLASSES_DICT \
   --patience $PATIENCE \
   --add_noise_channels \
-  --windows $WINDOWS > logs.txt
+  --window $WINDOW > logs.txt
