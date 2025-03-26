@@ -45,7 +45,8 @@ def run_training():
     # Convert the JSON string to a Python dictionary
     classes_dict = json.loads(args.classes_dict)
     args.classes_dict = classes_dict
-
+    if len(args.folios_val) == 1 and args.folios_val[0] == "":
+        args.folios_val = []
     # Pass all parsed arguments to the training function as keyword arguments
     for key, value in args.__dict__.items():
         print(key, value, type(value))
