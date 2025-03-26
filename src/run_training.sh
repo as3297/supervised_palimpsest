@@ -23,7 +23,7 @@ CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
 RESTORE_PATH="/projects/supervised_palimpsest/training/Verona_msXL/20250318-170853"
 
 
-python "/projects/supervised_palimpsest/src/run_training.py --epochs $EPOCHS \
+python run_training.py --epochs $EPOCHS \
   --batch_size $BATCH_SIZE \
   --modalities "${MODALITIES[@]}" \
   --nb_nodes_in_layer $NB_NODES_IN_LAYER \
