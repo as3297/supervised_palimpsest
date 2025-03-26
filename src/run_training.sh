@@ -16,14 +16,14 @@ MAIN_DATA_DIR="/projects/palimpsests" #"D:"
 PALIMPSEST_NAME="Verona_msXL"
 PATIENCE=15
 FOLIOS_TRAIN=("msXL_335v_b" "msXL_315v_b" "msXL_318r_b" "msXL_318v_b" "msXL_319r_b" "msXL_319v_b" "msXL_322r_b" "msXL_322v_b" "msXL_323r_b" "msXL_334r_b" "msXL_334v_b" "msXL_344r_b")
-FOLIOS_VAL=() #"msXL_344v_b") #("msXL_315r_b")
+FOLIOS_VAL= #"msXL_344v_b") #("msXL_315r_b")
 MODEL_DIR="/projects/supervised_palimpsest/training" #"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
 LEARNING_RATE_DECAY_EPOCH_STEP=0
 CLASSES_DICT='{"undertext_renn":1,"not_undertext":0}'
 RESTORE_PATH="/projects/supervised_palimpsest/training/Verona_msXL/20250318-170853"
 
 
-python run_training.py --epochs $EPOCHS \
+python "/projects/supervised_palimpsest/src/run_training.py --epochs $EPOCHS \
   --batch_size $BATCH_SIZE \
   --modalities "${MODALITIES[@]}" \
   --nb_nodes_in_layer $NB_NODES_IN_LAYER \

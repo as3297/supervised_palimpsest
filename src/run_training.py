@@ -26,7 +26,7 @@ def run_training():
     parser.add_argument('--palimpsest_name', "-pname", type=str, default=r"Verona_msXL", help='Palimpsest name')
     parser.add_argument('--folios_train',"-ftrain", nargs='+', default=["msXL_335v_b"],
                         help='List of training folios')
-    parser.add_argument('--folios_val',"-fval", nargs='+', default=[r"msXL_315r_b"], help='List of validation folios')
+    parser.add_argument('--folios_val',"-fval", nargs='*', default=[], help='List of validation folios')#r"msXL_315r_b"
 
     parser.add_argument('--model_dir',"-mdir", type=str, default=r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", help='Palimpsest model parent directory')
     parser.add_argument('--learning_rate_decay_epoch_step', type=int, default=0, help='Learning rate decay step')
