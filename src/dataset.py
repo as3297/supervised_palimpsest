@@ -2,6 +2,9 @@ import numpy as np
 from src.read_data import read_subset_features,read_subset_features_patches
 import os
 
+from src.tests.debug_noise_channel import folios_train
+
+
 def read_features(main_dir,folio_names,classes_dict,modalities, box,win):
     """
     Reads and aggregates feature data for multiple classes and folio names.
@@ -85,9 +88,16 @@ if __name__ == "__main__":
     main_data_dir = r"D:"
     palimpsest_name = r"Verona_msXL"
     base_data_dir = os.path.join(main_data_dir, palimpsest_name)
-    folios_train = ["msXL_335v_b", ]
-    classes_dict = {"undertext": 1}
+    classes_dict = {"undertext": 1, "not_undertext": 0}
     modalities = ["M"]
+    folios_train = ["msXL_335v_b"]
+    features_dict_train = read_features(base_data_dir, folios_train, classes_dict, modalities)
+    print("Features shape", features_dict_train[1].shape)
+    print("Labels shape", features_dict_train[1].shape)
+    folios_train = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+                   "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
+                   "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", r"msXL_315r_b"]
+
     features_dict_train = read_features(base_data_dir, folios_train, classes_dict, modalities)
     print("Features shape", features_dict_train[1].shape)
     print("Labels shape", features_dict_train[1].shape)

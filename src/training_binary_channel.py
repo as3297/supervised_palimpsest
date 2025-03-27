@@ -199,17 +199,18 @@ def training(
         folios_val = folios_val[:1]
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
     dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
-    print("nb_train samples",len(dataset_train[0]))
-    print("Feature shape",dataset_train[0].shape)
-    print("Label shape",dataset_train[1].shape)
+
     calculate_nb_samples_every_class(dataset_train[1])
     if len(folios_val)==0:
         # Shuffle the training dataset with consistent order for features and labels
         shuffled_indices = np.random.permutation(len(dataset_train[0]))
-        indices_val = shuffled_indices[:(0.2*len(dataset_train[0]))]
-        indices_train = shuffled_indices[(0.2*len(dataset_train[0])):]
+        indices_val = shuffled_indices[:int(0.2*len(dataset_train[0]))]
+        indices_train = shuffled_indices[int(0.2*len(dataset_train[0])):]
         dataset_train = (dataset_train[0][indices_train], dataset_train[1][indices_train])
         dataset_validation = (dataset_train[0][indices_val], dataset_train[1][indices_val])
+    print("nb_train samples",len(dataset_train[0]))
+    print("Feature shape",dataset_train[0].shape)
+    print("Label shape",dataset_train[1].shape)
     nb_features = dataset_train[0].shape[-1]
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
