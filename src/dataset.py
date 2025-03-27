@@ -86,19 +86,25 @@ def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,win,
 if __name__ == "__main__":
     main_data_dir = r"D:"
     palimpsest_name = r"Verona_msXL"
-    base_data_dir = os.path.join(main_data_dir, palimpsest_name)
+    main_dir = os.path.join(main_data_dir, palimpsest_name)
     classes_dict = {"undertext": 1, "not_undertext": 0}
     modalities = ["M"]
     folios_train = ["msXL_335v_b"]
     win = 0
     box = None
-    features_dict_train = read_features(base_data_dir, folios_train, classes_dict, modalities,box,win)
-    print("Features shape", features_dict_train[1].shape)
-    print("Labels shape", features_dict_train[1].shape)
-    folios_train = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
-                   "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
-                   "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", r"msXL_315r_b"]
+    features_train,_ =  dataset(main_dir,folios_train,[],classes_dict,modalities,win, debugging=False)
+    print("Features shape", features_train[0].shape)
+    print("Labels shape", features_train[1].shape)
+    unique_values, counts = np.unique(features_train[1], return_counts=True)
+    # Print counts
+    for value, count in zip(unique_values, counts):
+        print(f"Value {value} appears {count} times")
+    folios_train = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b"]
 
-    features_dict_train = read_features(base_data_dir, folios_train, classes_dict, modalities,box,win)
-    print("Features shape", features_dict_train[1].shape)
-    print("Labels shape", features_dict_train[1].shape)
+    features_train, _ = dataset(main_dir, folios_train, [], classes_dict, modalities, win, debugging=False)
+    print("Features shape", features_train[0].shape)
+    print("Labels shape", features_train[1].shape)
+    unique_values, counts = np.unique(features_train[1], return_counts=True)
+    # Print counts
+    for value, count in zip(unique_values, counts):
+        print(f"Value {value} appears {count} times")
