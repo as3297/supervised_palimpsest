@@ -208,6 +208,10 @@ def training(
         indices_train = shuffled_indices[int(0.2*len(dataset_train[0])):]
         dataset_validation = (dataset_train[0][indices_val], dataset_train[1][indices_val])
         dataset_train = (dataset_train[0][indices_train], dataset_train[1][indices_train])
+    else:
+        # Shuffle the training dataset with consistent order for features and labels
+        shuffled_indices = np.random.permutation(len(dataset_train[0]))
+        dataset_train = (dataset_train[0][shuffled_indices], dataset_train[1][shuffled_indices])
 
     print("nb_train samples",len(dataset_train[0]))
     print("Feature shape",dataset_train[0].shape)

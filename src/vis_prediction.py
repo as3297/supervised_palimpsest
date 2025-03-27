@@ -64,7 +64,7 @@ def predict(main_dir, palimpsest_name, trial_name,features):
     """
     saved_model_path = os.path.join(main_dir,palimpsest_name,trial_name)
     batch_size = 256*4
-    imported = load_model(os.path.join(saved_model_path,"model.keras"))
+    imported = load_model(os.path.join(saved_model_path,"model.h5"))
     print("Finished model loading.")
     nb_samples = features.shape[0]
     predictions = np.zeros((nb_samples,))
@@ -96,10 +96,10 @@ def save_prediction_mages(predictions,im_shape,folio_name,saved_model_path,box):
     io.imsave(save_path, predictions_thresh)
 
 if __name__ == "__main__":
-    root_dir = r"/projects/palimpsests"#r"d:"
+    root_dir = r"d:" #r"/projects/palimpsests"#
     palimpsest_name = "Verona_msXL"
-    main_dir = r"/projects/supervised_palimpsest/training"#r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"
-    model_name = "20250210-235448"
+    main_dir = r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"#r"/projects/supervised_palimpsest/training"#
+    model_name = "20250327-025751"
     modality = "M"
     box = None
 
