@@ -6,7 +6,7 @@ import os
 from dataset import dataset
 from noisy_labels.channel import Channel
 from tensorflow.keras.models import load_model
-
+import numpy as np
 osp = os.path.join
 
 
@@ -115,7 +115,13 @@ def save_dataset_par(train_folios,val_folios,model_dir,classes_dict):
     else:
         extend_json(save_path, d)
 
+def calculate_nb_samples_every_class(labels):
+    # Get unique values and their counts
+    unique_values, counts = np.unique(labels, return_counts=True)
 
+    # Print counts
+    for value, count in zip(unique_values, counts):
+        print(f"Value {value} appears {count} times")
 
 def training(
             current_time=datetime.now().strftime("%Y%m%d-%H%M%S"),
@@ -193,9 +199,18 @@ def training(
         folios_val = folios_val[:1]
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
     dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
+    print("nb_train samples",len(dataset_train[0]))
+    print("Feature shape",dataset_train[0].shape)
+    print("Label shape",dataset_train[1].shape)
+    calculate_nb_samples_every_class(dataset_train[1])
+    if len(folios_val)==0:
+        # Shuffle the training dataset with consistent order for features and labels
+        shuffled_indices = np.random.permutation(len(dataset_train[0]))
+        indices_val = shuffled_indices[:(0.2*len(dataset_train[0]))]
+        indices_train = shuffled_indices[(0.2*len(dataset_train[0])):]
+        dataset_train = (dataset_train[0][indices_train], dataset_train[1][indices_train])
+        dataset_validation = (dataset_train[0][indices_val], dataset_train[1][indices_val])
     nb_features = dataset_train[0].shape[-1]
-
-    print("nb_features",nb_features)
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
                   dropout_rate,learning_rate,add_noise_channels,len(classes_dict.keys()),window)
@@ -210,16 +225,10 @@ def training(
     if patience==-1:
         patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
-    if len(folios_val)==0:
-        history = gr.model.fit(dataset_train[0], dataset_train[1],
-                               epochs=epochs,
-                               callbacks=[tensorboard_callback, earlystopping_callback],
-                               validation_split=0.2, )
-    else:
-        history = gr.model.fit(dataset_train[0], dataset_train[1],
-        epochs = epochs,
-        callbacks = [tensorboard_callback,earlystopping_callback],
-        validation_data = (dataset_validation[0], dataset_validation[1]),)
+    history = gr.model.fit(dataset_train[0], dataset_train[1],
+    epochs = epochs,
+    callbacks = [tensorboard_callback,earlystopping_callback],
+    validation_data = (dataset_validation[0], dataset_validation[1]),shuffle=True,)
 
     gr.model.save(os.path.join(gr.model_dir, "model.keras"))
     #save model as h5
