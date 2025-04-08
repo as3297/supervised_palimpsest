@@ -65,7 +65,6 @@ def process_chunk(chunk_args):
     ys = np.array([ys[n_nn_idx[i,:]] for i in range(len(features_ut))])
     return dist,xs,ys,n  # Returning indices of nearest neighbors
 
-# Helper function for processing chunks in parallel
 
 def find_distance_btw_ut_and_folio(data_dir,folio_name, folio_names, class_name,modality,n,nb_processes,
                                    chunk_size,ut_chunk_size,save_dir,method,read_from_mask,debug=False,box=None):
@@ -208,17 +207,17 @@ def find_distance_btw_feat(features_ut,features_page,xs_page,ys_page,n,same_page
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
-    parser.add_argument("-r","--root", type=str, default=r"D:", help="Folder where you store all the palimpsests")
+    parser.add_argument("-r","--root", type=str, default=r"/projects/palimpsests", help="Folder where you store all the palimpsests")
     parser.add_argument("-m", "--metric", type=str, default="euclidean", help="Metric for calculating distance, e.g. cosine, euclidean, mahalanobis,")
-    parser.add_argument("-p","--proces", type=int, default=4, help="Number run in parallel")
-    parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
+    parser.add_argument("-p","--proces", type=int, default=20, help="Number run in parallel")
+    parser.add_argument("-ch","--chunk", type=int, default=1000, help="Page pixels number for a chunk in distance computation")
     parser.add_argument("-db", "--debug", action='store_true', default=False,
                         help="If debug run only for one ut chunk")
-    parser.add_argument("-um", "--usemask", action='store_true', default=False,
+    parser.add_argument("-um", "--usemask", action='store_true', default=True,
                         help="If true use ut mask for target features")
-    parser.add_argument("-b", "--box", nargs='+', default=[4446, 830, 266, 148],
+    parser.add_argument("-b", "--box", nargs='*', default=None,
                         help="bounding box x, y, width,height")
-    parser.add_argument("-utch", "--utchunk", type=int, default=100,
+    parser.add_argument("-utch", "--utchunk", type=int, default=10000,
                         help="Undertext pixels number for a chunk in distance computation")
     # 3. Parse the arguments
     args = parser.parse_args()
