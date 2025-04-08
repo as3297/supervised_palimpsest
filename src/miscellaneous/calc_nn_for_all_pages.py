@@ -234,7 +234,7 @@ if __name__ == "__main__":
         box = tuple(map(int, args.box))
         args.box = [box[0],box[1],box[2]+box[0],box[3]+box[1]]
 
-    folio_names = [ r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
+    folio_names = ["msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
     modality = "M"
     class_name = "undertext"
     n = 3
