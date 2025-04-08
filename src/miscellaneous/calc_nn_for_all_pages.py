@@ -232,7 +232,7 @@ if __name__ == "__main__":
     read_from_mask = args.usemask
     if not args.box is None:
         box = tuple(map(int, args.box))
-        box = [box[0],box[1],box[2]+box[0],box[3]+box[1]]
+        args.box = [box[0],box[1],box[2]+box[0],box[3]+box[1]]
 
     folio_names = [ r"msXL_335v_b",r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b", "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
     modality = "M"
@@ -244,5 +244,5 @@ if __name__ == "__main__":
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
-                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir,method=method,read_from_mask=read_from_mask,debug=debug, box=box)
+                        modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir,method=method,read_from_mask=read_from_mask,debug=debug, box=args.box)
 
