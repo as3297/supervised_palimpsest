@@ -67,7 +67,7 @@ def process_chunk(chunk_args):
 
 
 def find_distance_btw_ut_and_folio(data_dir,folio_name, folio_names, class_name,modality,n,nb_processes,
-                                   chunk_size,ut_chunk_size,save_dir,method,read_from_mask,debug=False,box=None):
+                                   chunk_size,ut_chunk_size,method,read_from_mask,debug=False,box=None):
     """
     :param data_dir: Directory path where the data is stored.
     :param ut_folio_name: Name of the undertext folio to process.
@@ -113,6 +113,9 @@ def find_distance_btw_ut_and_folio(data_dir,folio_name, folio_names, class_name,
             if debug:
                 break
         dict_nn = {"dist": dist.tolist(), "xs": xs.tolist(), "ys": ys.tolist(), "xs_ut": xs_ut.tolist(), "ys_ut": ys_ut.tolist()}
+        save_dir = os.path.join(main_data_dir, folio_ut, "distances" + "_" + method)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         fpath = os.path.join(save_dir,folio_name+"_"+cur_folio_name+f"_{method}_nn_{n}.pkl")
         save_pickle(fpath,dict_nn)
 
@@ -243,9 +246,7 @@ if __name__ == "__main__":
     n = 3
 
 
-    save_dir = os.path.join(main_data_dir,folio_ut, "distances"+"_"+method)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+
     dict = find_distance_btw_ut_and_folio(main_data_dir,folio_ut,folio_names,class_name,
-                    modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size, save_dir=save_dir,method=method,read_from_mask=read_from_mask,debug=debug, box=args.box)
+                    modality,n,nb_processes=nb_processes,chunk_size = chunk_size,ut_chunk_size=ut_chunk_size,method=method,read_from_mask=read_from_mask,debug=debug, box=args.box)
 
