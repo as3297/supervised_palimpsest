@@ -91,8 +91,8 @@ def find_distance_btw_ut_and_folio(data_dir,folio_name, folio_names, class_name,
     print("Done loading undertext features")
     #extract page features
     for cur_folio_name in folio_names:
-        features_page, xs_page, ys_page = load_page(data_dir, folio_name, modality)
-        print(f"Done loading page {folio_name} features")
+        features_page, xs_page, ys_page = load_page(data_dir,cur_folio_name, modality)
+        print(f"Done loading page {cur_folio_name} features")
         # increase number of pixel if the page of undertext is the same a page of calculated distances
         same_page = False
         if cur_folio_name == folio_name:
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Program to extract nearest neighbours location to points of interest")
     parser.add_argument("-r","--root", type=str, default=r"/projects/palimpsests", help="Folder where you store all the palimpsests")
     parser.add_argument("-m", "--metric", type=str, default="euclidean", help="Metric for calculating distance, e.g. cosine, euclidean, mahalanobis,")
-    parser.add_argument("-p","--proces", type=int, default=20, help="Number run in parallel")
+    parser.add_argument("-p","--proces", type=int, default=60, help="Number run in parallel")
     parser.add_argument("-ch","--chunk", type=int, default=100, help="Page pixels number for a chunk in distance computation")
     parser.add_argument("-db", "--debug", action='store_true', default=False,
                         help="If debug run only for one ut chunk")
@@ -217,7 +217,7 @@ if __name__ == "__main__":
                         help="If true use ut mask for target features")
     parser.add_argument("-b", "--box", nargs='*', default=None,
                         help="bounding box x, y, width,height")
-    parser.add_argument("-utch", "--utchunk", type=int, default=10000,
+    parser.add_argument("-utch", "--utchunk", type=int, default=100,
                         help="Undertext pixels number for a chunk in distance computation")
     # 3. Parse the arguments
     args = parser.parse_args()
@@ -234,7 +234,9 @@ if __name__ == "__main__":
         box = tuple(map(int, args.box))
         args.box = [box[0],box[1],box[2]+box[0],box[3]+box[1]]
 
-    folio_names = ["msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b", "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ] #
+    folio_names = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+                   "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
+                   "msXL_334v_b", "msXL_344r_b", "msXL_344v_b",] #
     folio_ut = "msXL_335v_b"
     modality = "M"
     class_name = "undertext"
