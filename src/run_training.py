@@ -26,7 +26,7 @@ def run_training():
     parser.add_argument('--palimpsest_name', "-pname", type=str, default=r"Verona_msXL", help='Palimpsest name')
     parser.add_argument('--folios_train',"-ftrain", nargs='+', default=["msXL_335v_b"],
                         help='List of training folios')
-    parser.add_argument('--folios_val',"-fval", nargs='*', default=[], help='List of validation folios')#r"msXL_315r_b"
+    parser.add_argument('--folios_val',"-fval", nargs='*', default=["msXL_344v_b"], help='List of validation folios')#r"msXL_315r_b"
 
     parser.add_argument('--model_dir',"-mdir", type=str, default=r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training", help='Palimpsest model parent directory')
     parser.add_argument('--learning_rate_decay_epoch_step', type=int, default=0, help='Learning rate decay step')
@@ -37,7 +37,7 @@ def run_training():
     parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=False, help='Enable or disable noise channel')
     parser.add_argument("--restore_path", "-rep", type=str, default=None,
                         help='Enable or disable noise channel')
-    parser.add_argument("--debug", "-deb", action='store_true', default=True, help='Reduce dataset size for debugging')
+    parser.add_argument("--debug", "-deb", action='store_true', default=False, help='Reduce dataset size for debugging')
 
     args = parser.parse_args()
     # Validate and normalize paths

@@ -65,15 +65,21 @@ def predict(main_dir, palimpsest_name, trial_name,features):
     saved_model_path = os.path.join(main_dir,palimpsest_name,trial_name)
     batch_size = 256*4
     imported = load_model(os.path.join(saved_model_path,"model.h5"))
+
+
+    # Print the shape of the model's output for debugging
+    print("Shape of imported model's output:", imported.output_shape)
+    nb_classes = imported.output_shape[-1]
+
     print("Finished model loading.")
     nb_samples = features.shape[0]
-    predictions = np.zeros((nb_samples,))
+    predictions = np.zeros((nb_samples,nb_classes),dtype=np.float32)
     for idx in range(0,nb_samples, batch_size):
         batch = features[idx:idx + batch_size,:]
         batch = tf.constant(batch,dtype=tf.float32)
         output = imported(batch)
         output = output.numpy()
-        predictions[idx:idx + batch_size] = output[:,0]
+        predictions[idx:idx + batch_size] = output
     return predictions,saved_model_path
 
 def save_prediction_mages(predictions,im_shape,folio_name,saved_model_path,box):
@@ -85,27 +91,40 @@ def save_prediction_mages(predictions,im_shape,folio_name,saved_model_path,box):
     :param box: An identifier or label for the specific image or region being processed.
     :return: None. The function saves prediction images to disk.
     """
-    predictions = np.reshape(predictions,newshape=im_shape+(1,))
-    predictions_thresh = predictions>0.5
-    predictions = (predictions*255).astype(np.uint8)
-    predictions_thresh = predictions_thresh.astype(np.uint8)*255
-    predictions = np.repeat(predictions,repeats=3,axis=2)
-    save_path = os.path.join(saved_model_path,f"{folio_name}_{modality}_prediction_{box}.tif")
-    io.imsave(save_path,predictions)
-    save_path = os.path.join(saved_model_path, f"{folio_name}_{modality}_prediction_thresh_{box}.tif")
-    io.imsave(save_path, predictions_thresh)
-
+    nb_classes = predictions.shape[-1]
+    d_classes = read_class_name(saved_model_path)
+    for class_idx in range(nb_classes):
+        #if multiclass classification save the maps separetly
+        if nb_classes>1:
+            class_name = d_classes[class_idx]
+        else:
+            class_name = "binary"
+        pred = np.reshape(predictions[:,class_idx],newshape=im_shape+(1,))
+        pred_thresh = pred>0.5
+        pred= (pred*255).astype(np.uint8)
+        pred_thresh = pred_thresh.astype(np.uint8)*255
+        pred = np.repeat(pred,repeats=3,axis=2)
+        save_path = os.path.join(saved_model_path,f"{folio_name}_{modality}_prediction_{box}_{class_name}.tif")
+        io.imsave(save_path,pred)
+        save_path = os.path.join(saved_model_path, f"{folio_name}_{modality}_prediction_thresh_{box}_{class_name}.tif")
+        io.imsave(save_path, pred_thresh)
+def read_class_name(saved_model_path):
+    d = read_json(os.path.join(saved_model_path,"dataset_parameters.json"))
+    d_classes = {}
+    for k,v in d["classes_dict"].items():
+        d_classes[v] = k
+    return d_classes
 if __name__ == "__main__":
     root_dir = r"d:" #r"/projects/palimpsests"#
     palimpsest_name = "Verona_msXL"
     main_dir = r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training"#r"/projects/supervised_palimpsest/training"#
-    model_name = "20250327-025751"
+    model_name = "20250410-135759"
     modality = "M"
     box = None
 
-    folio_names = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
-                   "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
-                   "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]  # r"msXL_315r_b"]
+    folio_names = ["msXL_335v_b"] # r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+                   #"msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
+                   #"msXL_334v_b", "msXL_344r_b", "msXL_344v_b", ]  # r"msXL_315r_b"]
 
     data_dir = os.path.join(root_dir, palimpsest_name)
     visualize_predictions(data_dir,folio_names,model_name,main_dir,palimpsest_name,modality,box)

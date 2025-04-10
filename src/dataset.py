@@ -69,7 +69,7 @@ def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality,win,
         tuple: A tuple containing the processed training dataset and validation dataset.
     """
     if debugging:
-        box = "val_bbox"
+        box = "val"
     else:
         box = None
     features_dict_train = read_features(main_dir,folio_names_train,class_names,modality,box,win)
@@ -89,20 +89,13 @@ if __name__ == "__main__":
     main_dir = os.path.join(main_data_dir, palimpsest_name)
     classes_dict = {"undertext": 1, "not_undertext": 0}
     modalities = ["M"]
-    folios_train = ["msXL_335v_b"]
-    win = 0
-    box = None
-    features_train,_ =  dataset(main_dir,folios_train,[],classes_dict,modalities,win, debugging=False)
-    print("Features shape", features_train[0].shape)
-    print("Labels shape", features_train[1].shape)
-    unique_values, counts = np.unique(features_train[1], return_counts=True)
-    # Print counts
-    for value, count in zip(unique_values, counts):
-        print(f"Value {value} appears {count} times")
-    folios_train = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b"]
-
-    features_train, _ = dataset(main_dir, folios_train, [], classes_dict, modalities, win, debugging=False)
-    print("Features shape", features_train[0].shape)
+    folios_train = ["msXL_344v_b"]#["msXL_335v_b"]
+    folios_val = ""#["msXL_344v_b"]
+    win = 10
+    box = "val"
+    features_train,_ =  dataset(main_dir,folios_train,folios_val,classes_dict,modalities,win, debugging=False)
+    print("Features train shape", features_train[0].shape)
+    #print("Features val shape", features_val[0].shape)
     print("Labels shape", features_train[1].shape)
     unique_values, counts = np.unique(features_train[1], return_counts=True)
     # Print counts

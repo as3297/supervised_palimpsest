@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from skimage import io
 import os
-from src.read_data import read_subset_features
+from src.read_data import read_subset_features, read_subset_features_patches
 from src.dataset import read_features,stack_features_labels
 from src.pil_image_cube import ImageCubePILobject
 from PIL import Image
@@ -22,10 +22,10 @@ win = 0
 
 def read_mask(root_dir,palimpsest_name,folio_name,class_name):
     with Image.open(os.path.join(root_dir,palimpsest_name,folio_name,"mask",folio_name+f"-{class_name}_black.png")).convert('L') as im:
-        im_ut = np.array(im)
-    im = im/np.max(im)
-    im = im>0.5
-    im = im.astype(int)
+        im = np.array(im)
+        im = im/np.max(im)
+        im = im>0.5
+        im = im.astype(int)
     return im
 def calculate_zero_elements(array):
     """
@@ -172,9 +172,23 @@ def does_it_align():
     plt.imshow(patches_msi_concat[:,:,-4:-1])
     plt.show()
 
+def test_nb_of_patches():
+    box = None
+    win = 10
+    im_ut = read_mask(root_dir, palimpsest_name, folio_names[0], "undertext")
+    im_nonut = read_mask(root_dir, palimpsest_name, folio_names[0], "not_undertext")
+    # Count all non-zero elements in im_ut
+    nb_pixels = calculate_zero_elements(im_ut)+calculate_zero_elements(im_nonut)
+    print(f"Number of ut elements: {nb_pixels}")
+    features_ut,xs,ys = read_subset_features_patches(main_dir,folio_names[0],"undertext",modalities,win,box)
+    features_nonut, xs, ys = read_subset_features_patches(main_dir, folio_names[0], "not_undertext", modalities, win, box)
+    features = np.concatenate((features_ut,features_nonut),0)
+    print(f"Shape of features: {features.shape}")
+
 if __name__ == '__main__':
     #test_class_image_vs_real_image()
     #test_stack_features_labels()
     #test_nb_dimenssion()
-    does_it_align()
+    #does_it_align()
+    test_nb_of_patches()
 
