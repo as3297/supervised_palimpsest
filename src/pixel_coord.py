@@ -40,16 +40,12 @@ def points_coord_in_bbox(fpath,bbox):
     :param bbox - [top,left,bottom,right] bbox coordinates that defines the range of dataset
     """
     coords = ClassCoord(fpath, 0).coords
-
-    try:
+    if not bbox is None:
         coords = [(x, y) for x, y in coords if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]]
-        xs, ys = map(list, zip(*coords))
-    except ValueError:
+    if len(coords) == 0:
         raise ValueError(
         f"No coordinates of mask {fpath} in bbox {bbox}. Ensure the mask image and bounding box are correctly defined.")
-    coords = [(x, y) for x, y in coords if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]]
     xs,ys = map(list, zip(*coords))
-
     nb_coords = len(xs)
     return xs, ys, nb_coords
 
