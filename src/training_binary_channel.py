@@ -32,7 +32,8 @@ class PalGraph():
       )
     elif loss == "sparse_categorical_crossentropy":
         self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='sum_over_batch_size', name='sparse_categorical_crossentropy')
-
+    else:
+        raise ValueError(f"Loss function name {loss} not recognized")
     if optimizer_name == "adam":
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
     elif optimizer_name == "sgd":
