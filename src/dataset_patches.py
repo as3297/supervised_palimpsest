@@ -18,6 +18,7 @@ class PILMSIPatchExtractor():
 
     def __init__(self, window_size):
         self.half_window = window_size // 2  # Ensures pixels are centered in the extracted window
+        self.window_size = self.calculate_window_size()
 
     def calculate_window_size(self):
         """Calculate the patch window size."""
@@ -32,7 +33,7 @@ class PILMSIPatchExtractor():
             labels.extend([label]*len(xs))
         return points, labels
 
-    def _create_dataset(self, total_points, batch_size, map_function, prefetch=True, shuffle=False, buffer_size=10000):
+    def _create_dataset(self, total_points, batch_size, map_function, nb_bands, prefetch=True, shuffle=False, buffer_size=10000):
         """Create and prepare a tf.data.Dataset."""
         dataset = tf.data.Dataset.from_tensor_slices(np.arange(total_points))
         if shuffle:
@@ -44,17 +45,25 @@ class PILMSIPatchExtractor():
             lambda idx: tf.py_function(
                 func=map_function,
                 inp=[idx],
-                Tout=(tf.float32, tf.int32) if is_with_labels else tf.float32
+                Tout=(tf.float32, tf.int32) if is_with_labels else tf.float32,
             ),
             num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(batch_size)
+        )
+        if is_with_labels:
+            dataset = dataset.map(
+                lambda img, label: (tf.ensure_shape(img, [self.window_size, self.window_size, nb_bands]),
+                                    tf.ensure_shape(label, [])))
+        else:
+            dataset = dataset.map(lambda img: tf.ensure_shape(img, [self.window_size, self.window_size, nb_bands]))
+
+        dataset = dataset.batch(batch_size)
         if prefetch:
             dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         return dataset
 
-    def _extract_patch(self, coord, msi_image, window_size):
+    def _extract_patch(self, coord, msi_image):
         """Extract patch for the coordinate from multispectral image."""
-        patch = np.zeros([window_size, window_size, msi_image.nb_bands], dtype=np.float32)
+        patch = np.zeros([self.window_size, self.window_size, msi_image.nb_bands], dtype=np.float32)
         for band_idx,band_name in enumerate(msi_image.band_list):
             patch[:, :, band_idx] = self.read_band_fragment(coord,msi_image,band_name)
         return patch
@@ -102,7 +111,6 @@ class PILMSIPatchExtractor():
 
         all_points = []
         all_labels = []
-        window_size = self.calculate_window_size()
 
         # Collect points and labels from all pil_msi_obj objects and masks
         for pil_msi_obj in pil_msi_objs:
@@ -115,11 +123,13 @@ class PILMSIPatchExtractor():
         np.random.shuffle(indexes)
         all_points = [all_points[i] for i in indexes]
         all_labels = [all_labels[i] for i in indexes]
+        nb_bands = pil_msi_objs[0].nb_bands
+
         def map_with_labels(idx):
             point, msi_image = all_points[idx]
-            return self._extract_patch(point, msi_image, window_size), all_labels[idx]
+            return self._extract_patch(point, msi_image), all_labels[idx]
 
-        return self._create_dataset(total_points, batch_size, map_with_labels, shuffle=shuffle, buffer_size=buffer_size)
+        return self._create_dataset(total_points, batch_size, map_with_labels, nb_bands, shuffle=shuffle, buffer_size=buffer_size)
 
     def generate_points_coords(self, pil_msi_obj) -> list[tuple[int, int]]:
         """Generates a list of (x, y) coordinates for all pixels in the given image."""
@@ -153,20 +163,17 @@ class PILMSIPatchExtractor():
         - tf.data.Dataset
             A TensorFlow dataset yielding batches of patches.
         """
-        window_size = self.calculate_window_size()
-
-
         if len(coords)==0:
             coords = self.generate_points_coords(pil_msi_obj)
         all_points = [(point, pil_msi_obj) for point in coords]
 
         total_points = len(all_points)
-
+        nb_bands = pil_msi_obj.nb_bands
         def map_without_labels(idx):
             point, msi_image = all_points[idx]
-            return self._extract_patch(point, msi_image, window_size)
+            return self._extract_patch(point, msi_image)
 
-        return self._create_dataset(total_points, batch_size, map_without_labels, prefetch=True, shuffle=False)
+        return self._create_dataset(total_points, batch_size, map_without_labels, nb_bands, prefetch=True, shuffle=False)
 
     def read_band_image(self,pil_msi_obj,band_name):
 
@@ -201,13 +208,13 @@ class PILMSIPatchExtractor():
         image_band.close()
         return fragment
 
-def dataset_tf(main_dir,folio_names,modalities,window_size,batch_size,class_dict,shuffle=True,buffer_size=10000,box=None):
+def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window,batch_size,shuffle=True,buffer_size=10000,box=None):
     pil_msi_objs = []
     for folio_name in folio_names:
         pil_msi_obj = ImageCubeObject(main_data_dir, folio_name, modalities, 0)
         pil_msi_objs.append(pil_msi_obj)
-    patches_instance = PILMSIPatchExtractor(window_size)
-    dataset = patches_instance.tf_data_from_multiple_folios(pil_msi_objs, {"undertext": 1}, batch_size=batch_size,shuffle=shuffle,buffer_size=buffer_size,box=box)
+    patches_instance = PILMSIPatchExtractor(window)
+    dataset = patches_instance.tf_data_from_multiple_folios(pil_msi_objs,classes_dict, batch_size=batch_size,shuffle=shuffle,buffer_size=buffer_size,box=box)
     return dataset
 
 if __name__ == "__main__":
@@ -217,13 +224,16 @@ if __name__ == "__main__":
     folio_names = ["msXL_335v_b", "msXL_319v_b"]
     modalities = ["M"]
     pil_msi_objs = []
-    for folio_name in folio_names:
-        pil_msi_obj = ImageCubeObject(main_data_dir, folio_name, modalities, 0)
-        pil_msi_objs.append(pil_msi_obj)
-    patches_instance = PILMSIPatchExtractor(2)
-    points_coord = [(1200, 2200)]
-    #dataset = patches_instance.tf_data_for_predictions(pil_msi_objs, points_coord)
-    dataset = patches_instance.tf_data_from_multiple_folios([pil_msi_obj], {"undertext": 1,"not_undertext":0}, shuffle=True,batch_size=2)
+    class_dict = {"undertext": 1, "not_undertext": 0}
+
+    dataset = dataset_tf(main_data_dir,folio_names,class_dict,modalities,3,2,shuffle=True,buffer_size=10)
+    sample = next(iter(dataset))  # e.g., (feature, label)
+    features, labels = sample
+    print("Feature shape", features.shape)
+    print("Label shape", labels.shape)
+    for x, y in dataset.take(1):
+        print(f"Feature batch shape: {x.shape}, Label batch shape: {y.shape}")
+        print(f"Feature data type: {x.dtype}, Label data type: {y.dtype}")
     for batch,labels in dataset:
         print(batch.shape)
         print(labels)

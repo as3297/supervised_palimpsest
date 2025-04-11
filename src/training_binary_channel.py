@@ -3,8 +3,8 @@ from model import build_model_multiclass,build_model_with_noise_channel
 from src.dataset_patches import dataset_tf
 from util import extend_json, save_json, convert_float_in_dict, load_channel_weights,calculate_confusion_matrix
 from datetime import datetime
+from src.dataset import dataset
 import os
-from dataset import dataset
 from noisy_labels.channel import Channel
 from tensorflow.keras.models import load_model
 import numpy as np
@@ -30,8 +30,8 @@ class PalGraph():
           reduction='sum_over_batch_size',
           name='binary_crossentropy'
       )
-    elif loss == "sparce_categorical_crossentropy":
-        self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='sum_over_batch_size', name='sparce_categorical_crossentropy')
+    elif loss == "sparse_categorical_crossentropy":
+        self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='sum_over_batch_size', name='sparse_categorical_crossentropy')
 
     if optimizer_name == "adam":
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
@@ -46,7 +46,7 @@ class PalGraph():
               loss_weights=None,
               metrics=["accuracy"],
           )
-
+          self.model.summary()
     else:
         if add_noise_channels:
 
@@ -72,11 +72,10 @@ class PalGraph():
         checkpoint.restore(path=os.path.join(self.restore_path,'ckpt-1')).assert_consumed()
 
 
-def save_training_parameters(gr,debugging,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step,
+def save_training_parameters(gr,batch_size,nb_epochs,nb_features,learning_rate_decay_epoch_step,
                              dropout_rate,label_smoothing,weight_decay,patience,win):
   d = {}
   d["restore_path"] = gr.restore_path
-  d["debugging"] = debugging
   d["batch_size"] = int(batch_size)
   d["nb_epochs"] = int(nb_epochs)
   d["nb_layers"] = int(gr.nb_layers)
@@ -149,8 +148,7 @@ def training(
             patience=15,
             add_noise_channels = False,
             classes_dict={"undertext_renn": 1, "not_undertext": 0},
-            restore_path=None,
-            debug=False):
+            restore_path=None):
     """
     Trains a machine learning model on a specified dataset using given hyperparameters
     and saves the trained model to a specified directory.
@@ -195,38 +193,36 @@ def training(
     model_dir = os.path.join(model_dir, palimpsest_name, current_time)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    if debug:
-        folios_train = folios_train[:1]
-        folios_val = folios_val[:1]
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
-    if window ==0 or window < 0:
+    if window <=0 :
         dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
     else:
-        dataset_train = dataset_tf(base_data_dir,folios_train,classes_dict,modalities,window)
-        dataset_validation = dataset_tf(base_data_dir,folios_val,classes_dict,modalities,window)
+        dataset_train = dataset_tf(base_data_dir,folios_train,classes_dict,modalities,window,batch_size,shuffle=True,buffer_size=10000,box=None)
+        dataset_validation = dataset_tf(base_data_dir,folios_val,classes_dict,modalities,window,batch_size,shuffle=False,buffer_size=10000,box=None)
 
-    calculate_nb_samples_every_class(dataset_train[1])
-    if len(folios_val)==0:
-        # Shuffle the training dataset with consistent order for features and labels
-        shuffled_indices = np.random.permutation(len(dataset_train[0]))
-        indices_val = shuffled_indices[:int(0.2*len(dataset_train[0]))]
-        indices_train = shuffled_indices[int(0.2*len(dataset_train[0])):]
-        dataset_validation = (dataset_train[0][indices_val], dataset_train[1][indices_val])
-        dataset_train = (dataset_train[0][indices_train], dataset_train[1][indices_train])
-    else:
-        # Shuffle the training dataset with consistent order for features and labels
-        shuffled_indices = np.random.permutation(len(dataset_train[0]))
-        dataset_train = (dataset_train[0][shuffled_indices], dataset_train[1][shuffled_indices])
+    if window <= 0:
+        if len(folios_val)==0:
+            # Shuffle the training dataset with consistent order for features and labels
+            shuffled_indices = np.random.permutation(len(dataset_train[0]))
+            indices_val = shuffled_indices[:int(0.2*len(dataset_train[0]))]
+            indices_train = shuffled_indices[int(0.2*len(dataset_train[0])):]
+            dataset_validation = (dataset_train[0][indices_val], dataset_train[1][indices_val])
+            dataset_train = (dataset_train[0][indices_train], dataset_train[1][indices_train])
+        else:
+            # Shuffle the training dataset with consistent order for features and labels
+            shuffled_indices = np.random.permutation(len(dataset_train[0]))
+            dataset_train = (dataset_train[0][shuffled_indices], dataset_train[1][shuffled_indices])
 
-    print("nb_train samples",len(dataset_train[0]))
-    print("Feature shape",dataset_train[0].shape)
-    print("Label shape",dataset_train[1].shape)
-    nb_features = dataset_train[0].shape[-1]
+    sample = next(iter(dataset_train))  # e.g., (feature, label)
+    features, labels = sample
+    print("Feature shape",features.shape)
+    print("Label shape",labels.shape)
+    nb_features = features.shape[-1]
     gr = PalGraph(nb_features,nb_nodes_in_layer,model_dir,nb_layers,restore_path,optimizer_name,
                 label_smoothing,loss_name,
                   dropout_rate,learning_rate,add_noise_channels,len(classes_dict.keys()),window)
     #save model hyperparametrs
-    save_training_parameters(gr, debug, batch_size, epochs,nb_features,
+    save_training_parameters(gr, batch_size, epochs,nb_features,
                            learning_rate_decay_epoch_step,dropout_rate,label_smoothing,weight_decay,patience,window)
     # same label distribution as in the train set
     log_dir = os.path.join(model_dir,'logs')
@@ -236,11 +232,18 @@ def training(
     if patience==-1:
         patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
-    history = gr.model.fit(dataset_train[0], dataset_train[1],
-    batch_size = batch_size,
-    epochs = epochs,
-    callbacks = [tensorboard_callback,earlystopping_callback],
-    validation_data = (dataset_validation[0], dataset_validation[1]),shuffle=True,)
+    if window>0:
+        history = gr.model.fit(dataset_train,
+                               batch_size=batch_size,
+                               epochs=epochs,
+                               callbacks=[tensorboard_callback, earlystopping_callback],
+                               validation_data=dataset_validation)
+    else:
+        history = gr.model.fit(dataset_train[0], dataset_train[1],
+        batch_size = batch_size,
+        epochs = epochs,
+        callbacks = [tensorboard_callback,earlystopping_callback],
+        validation_data = (dataset_validation[0], dataset_validation[1]),shuffle=True,)
 
     gr.model.save(os.path.join(gr.model_dir, "model.keras"))
     #save model as h5

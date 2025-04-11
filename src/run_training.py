@@ -12,16 +12,16 @@ def run_training():
                         description='Trains supervised NN algorithm for palimpsest ink detection',
                         epilog='Thanks to the universe')
     parser.add_argument('--epochs',"-ep", type=int, default=1, help='Number of training epochs')
-    parser.add_argument('--batch_size',"-bs", type=int, default=32 * 4, help='Batch size for training')
+    parser.add_argument('--batch_size',"-bs", type=int, default=32, help='Batch size for training')
     parser.add_argument('--modalities',"-md", nargs='+', default=["M"], help='List of modalities')
-    parser.add_argument('--nb_nodes_in_layer',"-nodes", type=int, default=256, help='Number of nodes in a layer')
-    parser.add_argument('--nb_layers', "-layers", type=int, default=4, help='Number of layers')
+    parser.add_argument('--nb_nodes_in_layer',"-nodes", type=int, default=32, help='Number of nodes in a layer')
+    parser.add_argument('--nb_layers', "-layers", type=int, default=2, help='Number of layers')
     parser.add_argument('--optimizer_name', "-opt", type=str, default="adam", help='Name of the optimizer')
     parser.add_argument('--learning_rate', "-lr", type=float, default=0.00001, help='Learning rate')
     parser.add_argument('--dropout_rate', "-dropout", type=float, default=0.0, help='Dropout rate')
     parser.add_argument('--label_smoothing', type=float, default=0.0, help='Label smoothing value')
     parser.add_argument('--weight_decay', "-wdecay", type=float, default=0.0, help='Weight decay value')
-    parser.add_argument('--loss_name', "-loss",type=str, default="sparce_categorical_crossentropy", help='Loss function name')
+    parser.add_argument('--loss_name', "-loss",type=str, default="sparse_categorical_crossentropy", help='Loss function name')
     parser.add_argument('--main_data_dir',"-datadir", type=str, default=r"D:", help='Main data directory path')
     parser.add_argument('--palimpsest_name', "-pname", type=str, default=r"Verona_msXL", help='Palimpsest name')
     parser.add_argument('--folios_train',"-ftrain", nargs='+', default=["msXL_335v_b"],
@@ -37,7 +37,6 @@ def run_training():
     parser.add_argument("--add_noise_channels", "-nch", action='store_true', default=False, help='Enable or disable noise channel')
     parser.add_argument("--restore_path", "-rep", type=str, default=None,
                         help='Enable or disable noise channel')
-    parser.add_argument("--debug", "-deb", action='store_true', default=False, help='Reduce dataset size for debugging')
 
     args = parser.parse_args()
     # Validate and normalize paths

@@ -46,6 +46,7 @@ def ccn_base(nb_layers,nb_units_per_layer,dropout_rate,batch_norm, inputs):
         x = BatchNormalization(axis=1,name="batchnorm_{}".format(layer_idx))(x)
       x = ReLU(name="relu_{}".format(layer_idx))(x)
       x = Dropout(dropout_rate,name="dropout_{}".format(layer_idx))(x)
+    x = tf.keras.layers.Flatten()(x)
     return x
 
 def build_model(nb_features,nb_units_per_layer,nb_layers,dropout_rate,batch_norm=False):
