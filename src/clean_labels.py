@@ -33,7 +33,7 @@ def read_features(im_pil_ob,main_dir,folio_name,class_name):
         3. ys: list
            The y-coordinates of the points.
     """
-    xs, ys = read_x_y_coords(main_dir, folio_name, class_name, im_pil_ob, None)
+    xs, ys = read_x_y_coords(main_dir, folio_name, class_name, None)
     points_object = PointsfromMSI_PIL(pil_msi_obj=im_pil_ob, points_coord=list(zip(xs, ys)))
     features = points_object.points
     return features,xs,ys

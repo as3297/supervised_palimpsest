@@ -60,7 +60,7 @@ def read_ot_mask(main_dir, palimpsest_name, folio_name,box):
 
 
 
-def read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box=None):
+def read_x_y_coords(main_dir,folio_name,class_name,box=None):
     """
     Reads X and Y coordinates for a given folio name, class, and image object based on a bounding box.
 
@@ -81,14 +81,10 @@ def read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box=None):
         if type(box) is str:
             bbox_fpath = osp(main_dir, folio_name, "dataset_split.json")
             bbox_dict = read_json(bbox_fpath)
-            bbox = read_split_box_coord(box, bbox_dict)
-        else:
-            bbox = box
-    else:
-        bbox = [0,0,im_pil_ob.width-1,im_pil_ob.height-1]
+            box = read_split_box_coord(box, bbox_dict)
 
     fpath_image_mask = os.path.join(main_dir, folio_name, "mask", f"{folio_name}-{class_name}_black.png")
-    xs, ys, _ = points_coord_in_bbox(fpath_image_mask, bbox)
+    xs, ys, _ = points_coord_in_bbox(fpath_image_mask, box)
     return xs,ys
 
 def read_subset_features(main_dir,folio_name,class_name,modality,box=None):
@@ -118,7 +114,7 @@ def read_subset_features(main_dir,folio_name,class_name,modality,box=None):
                 Y-coordinates of the extracted points.
     """
     im_pil_ob = read_msi_image_object(main_dir,folio_name,modality)
-    xs,ys = read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box)
+    xs,ys = read_x_y_coords(main_dir,folio_name,class_name,box)
     points_object = PointsfromMSI_PIL(pil_msi_obj=im_pil_ob, points_coord= list(zip(xs,ys)))
     features = points_object.points
     return features,xs,ys
@@ -152,7 +148,7 @@ def read_subset_features_patches(main_dir,folio_name,class_name,modality,win,box
                 Y-coordinates of the extracted points.
     """
     im_pil_ob = read_msi_image_object(main_dir,folio_name,modality)
-    xs,ys = read_x_y_coords(main_dir,folio_name,class_name,im_pil_ob,box)
+    xs,ys = read_x_y_coords(main_dir,folio_name,class_name,box)
     points_object = PatchesfromMSI_PIL(pil_msi_obj=im_pil_ob, points_coord= list(zip(xs,ys)),win=win)
     features = points_object.ims_imgs
     return features,xs,ys
