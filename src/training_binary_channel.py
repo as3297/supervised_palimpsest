@@ -1,5 +1,6 @@
 import tensorflow as tf
 from model import build_model_multiclass,build_model_with_noise_channel
+from src.dataset_patches import dataset_tf
 from util import extend_json, save_json, convert_float_in_dict, load_channel_weights,calculate_confusion_matrix
 from datetime import datetime
 import os
@@ -198,7 +199,11 @@ def training(
         folios_train = folios_train[:1]
         folios_val = folios_val[:1]
     save_dataset_par(folios_train,folios_val,model_dir,classes_dict)
-    dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
+    if window ==0 or window < 0:
+        dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
+    else:
+        dataset_train = dataset_tf(base_data_dir,folios_train,classes_dict,modalities,window)
+        dataset_validation = dataset_tf(base_data_dir,folios_val,classes_dict,modalities,window)
 
     calculate_nb_samples_every_class(dataset_train[1])
     if len(folios_val)==0:
@@ -232,6 +237,7 @@ def training(
         patience=epochs
     earlystopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=1, mode='min')
     history = gr.model.fit(dataset_train[0], dataset_train[1],
+    batch_size = batch_size,
     epochs = epochs,
     callbacks = [tensorboard_callback,earlystopping_callback],
     validation_data = (dataset_validation[0], dataset_validation[1]),shuffle=True,)
