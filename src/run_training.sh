@@ -2,7 +2,7 @@
 
 # Set default values for the arguments.
 EPOCHS=45
-BATCH_SIZE=512
+BATCH_SIZE=32
 MODALITIES=("M")
 NB_NODES_IN_LAYER=64
 NB_LAYERS=2
