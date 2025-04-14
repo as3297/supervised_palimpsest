@@ -198,7 +198,7 @@ def training(
     if window <=0 :
         dataset_train, dataset_validation = dataset(base_data_dir,folios_train,folios_val,classes_dict,modalities,window)
     else:
-        dataset_train = dataset_tf(base_data_dir,folios_train,classes_dict,modalities,window,batch_size,shuffle=True,buffer_size=1000,box=None)
+        dataset_train = dataset_tf(base_data_dir,folios_train,classes_dict,modalities,window,batch_size,shuffle=True,buffer_size=10000,box=None)
         dataset_validation = dataset_tf(base_data_dir,folios_val,classes_dict,modalities,window,batch_size,shuffle=False,buffer_size=1000,box=None)
 
     if window <= 0:
