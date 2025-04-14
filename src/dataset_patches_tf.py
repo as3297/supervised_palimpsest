@@ -12,9 +12,9 @@ from src.util import read_band_list
 
 # --- Utility functions implemented with pure TensorFlow ops ---
 
-def read_tiff_image_tf(file_path):
+def read_png_image_tf(file_path):
     """
-    Reads a TIFF image file, decodes it, and optionally rotates it.
+    Reads a png image file, decodes it, and optionally rotates it.
     Args:
       file_path: A scalar string tensor with the image file path.
       rotate_angle: An integer; must be 0, 90, 180, or 270.
@@ -66,10 +66,12 @@ def extract_patch_tf(image, coord, half_window, window_size, padding_fill=0):
 
     cropped = tf.pad(cropped, paddings, constant_values=padding_fill)
     patch = tf.image.resize_with_crop_or_pad(cropped, window_size, window_size)
+    patch = tf.cast(patch, tf.float32) / 255.0
+
     return patch
 
 
-def process_patch_with_label(patch_spec, window_size, band_list, rotate_angle, padding_fill):
+def process_patch_with_label(patch_spec, window_size, band_list,padding_fill):
     """
     Process a patch specification to extract a patch from each band and return the patch with label.
 
@@ -94,7 +96,7 @@ def process_patch_with_label(patch_spec, window_size, band_list, rotate_angle, p
     # "<base_path>-<band>.tif"
     for band in band_list:
         file_path = tf.strings.join([base_path, "-", band, ".png"])
-        image = read_tiff_image_tf(file_path)
+        image = read_png_image_tf(file_path)
         patch = extract_patch_tf(image, coord, half_window, window_size, padding_fill)
         patch = tf.squeeze(patch)
         patches.append(patch)
@@ -106,7 +108,7 @@ def process_patch_with_label(patch_spec, window_size, band_list, rotate_angle, p
 
 # --- Building a tf.data Dataset that avoids tf.py_function ---
 
-def build_patch_dataset_with_labels(patch_specs, window_size, band_list, rotate_angle, padding_fill=0, batch_size=32,
+def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding_fill=0, batch_size=32,
                                     shuffle=True, buffer_size=10000):
     """
     Builds a tf.data.Dataset yielding patches and labels.
@@ -139,7 +141,7 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, rotate_
 
     ds = ds.map(
         lambda base_path, coord, label: process_patch_with_label(
-            (base_path, coord, label), window_size, band_list, rotate_angle, padding_fill),
+            (base_path, coord, label), window_size, band_list, padding_fill),
         num_parallel_calls=tf.data.experimental.AUTOTUNE
     )
 
@@ -182,7 +184,7 @@ def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, ro
     np.random.shuffle(indexes)
     patch_specs = [patch_specs[i] for i in indexes]
     band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
-    dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, rotate_angle, 0, batch_size, shuffle, buffer_size)
+    dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, 0, batch_size, shuffle, buffer_size)
     return dataset
 
 
@@ -193,7 +195,7 @@ if __name__ == "__main__":
     folio_names = ["msXL_335v_b", "msXL_335v_b","msXL_319v_b"]
     modalities = ["M"]
     class_dict = {"undertext":1,"not_undertext":0}
-    dataset = dataset_tf(main_data_dir,folio_names,modalities,classes_dict=class_dict,window_size=33,rotate_angle=0,batch_size=32,shuffle=True,buffer_size=10000)
+    dataset = dataset_tf(main_data_dir,folio_names,class_dict,modalities,window_size=33,rotate_angle=0,batch_size=32,shuffle=True,buffer_size=10000)
     # Iterate over one batch.
     for patches, labels in dataset.take(1):
         print("Batch patches shape:", patches.shape)
