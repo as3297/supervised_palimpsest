@@ -146,7 +146,7 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
     )
 
     ds = ds.batch(batch_size)
-    ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
+    ds = ds.prefetch(2*batch_size)
     return ds
 
 def test_build_patch_dataset_with_labels(root_dir,palimpsest_name,main_data_dir,folio_names,modalities,):
