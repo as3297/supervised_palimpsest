@@ -23,7 +23,7 @@ def read_png_image_tf(file_path):
     """
     image_bytes = tf.io.read_file(file_path)
     # Decode using TensorFlow I/O (assumes the image is a TIFF)
-    image = tf.image.decode_png(image_bytes)
+    image = tf.image.decode_png(image_bytes,channels=1)
     return image
 
 
@@ -142,11 +142,13 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
     ds = ds.map(
         lambda base_path, coord, label: process_patch_with_label(
             (base_path, coord, label), window_size, band_list, padding_fill),
-        num_parallel_calls=16
-    )
+        num_parallel_calls=4
 
+    )
+    # Cache dataset in memory after first epoch (if it fits!)
+    # dataset = dataset.cache() # Uncomment if dataset fits in RAM
     ds = ds.batch(batch_size)
-    ds = ds.prefetch(2*batch_size)
+    ds = ds.prefetch(batch_size)#tf.data.AUTOTUNE
     return ds
 
 def test_build_patch_dataset_with_labels(root_dir,palimpsest_name,main_data_dir,folio_names,modalities,):
@@ -169,6 +171,7 @@ def test_build_patch_dataset_with_labels(root_dir,palimpsest_name,main_data_dir,
 
 def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, rotate_angle, batch_size=32, shuffle=True,
                         buffer_size=10000,box=None):
+
     png_folder = "png_images_standardized"
     patch_specs = []
     for folio_name in folio_names:
@@ -195,7 +198,10 @@ if __name__ == "__main__":
     folio_names = ["msXL_335v_b", "msXL_335v_b","msXL_319v_b"]
     modalities = ["M"]
     class_dict = {"undertext":1,"not_undertext":0}
+    path_to_profiler = r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\New folder"
+
     dataset = dataset_tf(main_data_dir,folio_names,class_dict,modalities,window_size=33,rotate_angle=0,batch_size=32,shuffle=True,buffer_size=10000)
+
     # Iterate over one batch.
     for patches, labels in dataset.take(1):
         print("Batch patches shape:", patches.shape)
