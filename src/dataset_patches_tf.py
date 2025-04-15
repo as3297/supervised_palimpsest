@@ -136,8 +136,8 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
 
     ds = tf.data.Dataset.from_tensor_slices((base_paths_tensor, coords_tensor, labels_tensor))
 
-    if shuffle:
-        ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)
+    #if shuffle:
+    #    ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)
 
     ds = ds.map(
         lambda base_path, coord, label: process_patch_with_label(
