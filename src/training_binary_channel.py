@@ -1,6 +1,6 @@
 import tensorflow as tf
 from model import build_model_multiclass,build_model_with_noise_channel
-from src.dataset_patches import dataset_tf
+from src.dataset_patches_tf import dataset_tf
 from util import extend_json, save_json, convert_float_in_dict, load_channel_weights,calculate_confusion_matrix
 from datetime import datetime
 from src.dataset import dataset

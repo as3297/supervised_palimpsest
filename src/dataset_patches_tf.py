@@ -136,20 +136,40 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
 
     ds = tf.data.Dataset.from_tensor_slices((base_paths_tensor, coords_tensor, labels_tensor))
 
-    #if shuffle:
-    #    ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)
+    if shuffle:
+        ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)
 
     ds = ds.map(
         lambda base_path, coord, label: process_patch_with_label(
             (base_path, coord, label), window_size, band_list, padding_fill),
-        num_parallel_calls=4
-
+        num_parallel_calls=tf.data.AUTOTUNE,
     )
     # Cache dataset in memory after first epoch (if it fits!)
     # dataset = dataset.cache() # Uncomment if dataset fits in RAM
     ds = ds.batch(batch_size)
-    ds = ds.prefetch(batch_size)#tf.data.AUTOTUNE
+    ds = ds.prefetch(tf.data.AUTOTUNE)#tf.data.AUTOTUNE
     return ds
+
+def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, rotate_angle, batch_size=32, shuffle=True,
+                        buffer_size=10000,box=None):
+
+    png_folder = "png_images_standardized"
+    patch_specs = []
+    for folio_name in folio_names:
+        msi_obj = ImageCubeObject(main_data_dir, folio_name, modalities, 0)
+        for class_name,label in classes_dict.items():
+            xs, ys = read_x_y_coords(msi_obj.folio_dir, msi_obj.folio_name, class_name, box)
+            coords = zip(xs, ys)
+            for coord in coords:
+                patch_specs.append((os.path.join(main_data_dir,png_folder,folio_name,folio_name),coord,label))
+    print(f"Total patches: {len(patch_specs)}")
+    total_points = len(patch_specs)
+    indexes = np.arange(total_points)
+    np.random.shuffle(indexes)
+    patch_specs = [patch_specs[i] for i in indexes]
+    band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
+    dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, 0, batch_size, shuffle, buffer_size)
+    return dataset
 
 def test_build_patch_dataset_with_labels(root_dir,palimpsest_name,main_data_dir,folio_names,modalities,):
     coords = [(100, 150), (200, 180), (50, 75)]
@@ -168,27 +188,6 @@ def test_build_patch_dataset_with_labels(root_dir,palimpsest_name,main_data_dir,
     dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, rotate_angle, padding_fill,
                                               batch_size)
 
-
-def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, rotate_angle, batch_size=32, shuffle=True,
-                        buffer_size=10000,box=None):
-
-    png_folder = "png_images_standardized"
-    patch_specs = []
-    for folio_name in folio_names:
-        msi_obj = ImageCubeObject(main_data_dir, folio_name, modalities, 0)
-        for class_name,label in classes_dict.items():
-            xs, ys = read_x_y_coords(msi_obj.folio_dir, msi_obj.folio_name, class_name, box)
-            coords = zip(xs, ys)
-            for coord in coords:
-                patch_specs.append((os.path.join(main_data_dir,png_folder,folio_name,folio_name),coord,label))
-
-    total_points = len(patch_specs)
-    indexes = np.arange(total_points)
-    np.random.shuffle(indexes)
-    patch_specs = [patch_specs[i] for i in indexes]
-    band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
-    dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, 0, batch_size, shuffle, buffer_size)
-    return dataset
 
 
 if __name__ == "__main__":
