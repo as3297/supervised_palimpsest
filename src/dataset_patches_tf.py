@@ -145,14 +145,19 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
         num_parallel_calls=tf.data.AUTOTUNE,
     )
     # Cache dataset in memory after first epoch (if it fits!)
-    # dataset = dataset.cache() # Uncomment if dataset fits in RAM
+    #dataset = ds.cache() # Uncomment if dataset fits in RAM
     ds = ds.batch(batch_size)
     ds = ds.prefetch(tf.data.AUTOTUNE)#tf.data.AUTOTUNE
     return ds
 
-def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, rotate_angle, batch_size=32, shuffle=True,
-                        buffer_size=10000,box=None):
+def calculate_window_size(half_window):
+    """Calculate the patch window size."""
+    return half_window * 2 + 1
 
+def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, batch_size=32, shuffle=True,
+                        buffer_size=10000,box=None):
+    half_window = window_size // 2  # Ensures pixels are centered in the extracted window
+    window_size = calculate_window_size(half_window)
     png_folder = "png_images_standardized"
     patch_specs = []
     for folio_name in folio_names:
