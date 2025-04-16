@@ -142,7 +142,7 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
     ds = ds.map(
         lambda base_path, coord, label: process_patch_with_label(
             (base_path, coord, label), window_size, band_list, padding_fill),
-        num_parallel_calls=tf.data.AUTOTUNE,
+        num_parallel_calls=1,
     )
     # Cache dataset in memory after first epoch (if it fits!)
     #dataset = ds.cache() # Uncomment if dataset fits in RAM
