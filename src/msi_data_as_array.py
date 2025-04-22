@@ -27,7 +27,7 @@ class NormalizingGray():
         """Read spectralon value for one band"""
         im_band = self.pil_msi_obj.pil_msi_img[band_idx]
         points_per_band = list(map(im_band.getpixel, self.spectralon_coords))
-        mean_grey_val = np.mean(points_per_band)
+        mean_grey_val = np.mean(points_per_band).astype(np.float32)
         return mean_grey_val
 
     def make_array_of_normalizing_values(self):
@@ -91,6 +91,7 @@ class DataFromPILImageCube():
         return msi_img
 
 
+
 class CoordsWindow():
     def __init__(self,pil_img_obj:ImageCubePILobject):
         """
@@ -101,6 +102,12 @@ class CoordsWindow():
         self.pil_msi_img = pil_img_obj.pil_msi_img
         self.bands_list = pil_img_obj.band_list
         self.nb_bands = pil_img_obj.nb_bands
+    def close_all_images(self):
+        """
+        Close all opened images
+        """
+        for band_obj in self.pil_msi_img:
+            band_obj.close()
 
 
 class BboxWindow(CoordsWindow):
@@ -229,6 +236,7 @@ class PatchesfromMSI_PIL(DataFromPILImageCube):
         self.unstretch_ims_imgs = self.convert_pil_points_to_patches(self.pil_msi_obj)
         self.ims_imgs = self.standartize(self.unstretch_ims_imgs)
         self.ims_imgs = np.transpose(self.ims_imgs, axes=[1, 2, 3, 0])
+        self.pil_msi_obj.close_all_images()
 
     def read_band_fragment(self,point_coord,im_band):
         """
@@ -270,7 +278,7 @@ class PatchesfromMSI_PIL(DataFromPILImageCube):
         :return: array with dim [nb_bands,nb_points]
         """
         win = self.half_win * 2 + 1
-        patchs = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points,win,win])
+        patchs = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points,win,win],dtype=np.float32)
         for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
             fragments_per_band = list(map(self.read_band_fragment,self.points_coord,repeat(im_band)))
             patchs[band_idx,:,:,:] = np.stack(fragments_per_band,axis=0)
@@ -384,11 +392,15 @@ def strech_contrast(val,max_val):
     val= val/max_val
     return val
 
-def standartize(im,max_value):
+
+def standartize(im, max_value):
     """Standartized image by grey_value"""
-    im = im/max_value
-    im = np.clip(im,a_max=1.0,a_min=0.0)
+    if np.issubdtype(im.dtype, np.floating):  # Check if im is a float array
+        im = im.astype(np.float32)  # Convert it into float32
+    im = im / max_value
+    im = np.clip(im, a_max=1.0, a_min=0.0)
     return im
+
 
 def conver_pil_msi_ims_to_array(pil_msi_img,width,height,nb_bands):
     """Convert PIL image cube into array image cube"""
