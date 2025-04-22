@@ -27,83 +27,6 @@ def read_png_image_tf(file_path):
     return image
 
 
-def extract_patch_tf(image, coord, half_window, window_size, padding_fill=0):
-    """
-    Extracts a patch of size [window_size, window_size] from the image tensor.
-    Args:
-      image: A tensor of shape [H, W, C].
-      coord: A tensor [x, y] representing the center pixel.
-      half_window: Integer, equal to window_size // 2.
-      window_size: Desired final patch size (square).
-      padding_fill: Padding value for regions outside the image.
-    Returns:
-      A tensor of shape [window_size, window_size, C].
-    """
-    shape = tf.shape(image)
-    H, W = shape[0], shape[1]
-    x, y = coord[0], coord[1]
-
-    # Calculate crop boundaries
-    left = tf.maximum(0, x - half_window)
-    upper = tf.maximum(0, y - half_window)
-    right = tf.minimum(W, x + half_window + 1)
-    lower = tf.minimum(H, y + half_window + 1)
-
-    cropped = tf.image.crop_to_bounding_box(
-        image,
-        offset_height=upper,
-        offset_width=left,
-        target_height=lower - upper,
-        target_width=right - left
-    )
-
-    # Compute padding amounts
-    pad_top = tf.maximum(0, half_window - y)
-    pad_left = tf.maximum(0, half_window - x)
-    pad_bottom = tf.maximum(0, (x + half_window + 1) - W)
-    pad_right = tf.maximum(0, (y + half_window + 1) - H)
-    paddings = [[pad_top, pad_bottom], [pad_left, pad_right], [0, 0]]
-
-    cropped = tf.pad(cropped, paddings, constant_values=padding_fill)
-    patch = tf.image.resize_with_crop_or_pad(cropped, window_size, window_size)
-    patch = tf.cast(patch, tf.float32) / 255.0
-
-    return patch
-
-
-def process_patch_with_label(patch_spec, window_size, band_list,padding_fill):
-    """
-    Process a patch specification to extract a patch from each band and return the patch with label.
-
-    Args:
-      patch_spec: A tuple (base_path, coord, label) where:
-          - base_path is a scalar string tensor (e.g. '/data/folio1/MS_XL_315r')
-          - coord is a tensor [x, y]
-          - label is a scalar (e.g. 0 or 1)
-      window_size: The final patch size (square).
-      band_list: List of band names (strings).
-      rotate_angle: Rotation angle in degrees (e.g., 0, 90, 180, 270).
-      padding_fill: Padding fill value.
-
-    Returns:
-      A tuple: (patch, label), where patch is a tensor of shape [window_size, window_size, num_bands].
-    """
-    half_window = window_size // 2
-    base_path, coord, label = patch_spec
-
-    patches = []
-    # Loop over each band and build the file path. Here we assume your file naming follows:
-    # "<base_path>-<band>.tif"
-    for band in band_list:
-        file_path = tf.strings.join([base_path, "-", band, ".png"])
-        image = read_png_image_tf(file_path)
-        patch = extract_patch_tf(image, coord, half_window, window_size, padding_fill)
-        patch = tf.squeeze(patch)
-        patches.append(patch)
-    # Stack patches along the channel axis.
-
-    patch_tensor = tf.stack(patches, axis=-1)
-    return patch_tensor, label
 
 
 # --- Building a tf.data Dataset that avoids tf.py_function ---
@@ -134,7 +57,7 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
     coords_tensor = tf.constant(coords, dtype=tf.int32)  # shape [N, 2]
     labels_tensor = tf.constant(labels)  # shape [N]
 
-    ds = tf.data.Dataset.from_tensor_slices((base_paths_tensor, coords_tensor, labels_tensor))
+    ds = tf.data.Dataset.interleave((base_paths_tensor, coords_tensor, labels_tensor))
 
     if shuffle:
         ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)

@@ -115,8 +115,6 @@ def save_new_mask(idxs,xs,ys,labels,width,height,main_dir,folio_name,fname):
     io.imsave(os.path.join(main_dir,folio_name,"mask",fname),im)
 
 
-
-
 if __name__ == "__main__":
     repeated_enn_test()
     main_data_dir = "/projects/palimpsests/Verona_msXL" #"D:\Verona_msXL"#
