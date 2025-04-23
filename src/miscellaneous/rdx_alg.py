@@ -1,12 +1,12 @@
 import numpy as np
-from read_data import read_msi_image_object, read_rectengular_patch_coord
-from msi_data_as_array import FullImageFromPILImageCube
-from read_data import read_subset_features
+from src.read_data import read_msi_image_object, read_rectengular_patch_coord
+from src.msi_data_as_array import FullImageFromPILImageCube
+from src.read_data import read_subset_features
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from skimage import io
-from util import read_json
+from src.util import read_json
 
 
 def calc_cov_matrix(features):

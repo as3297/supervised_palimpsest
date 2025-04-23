@@ -1,5 +1,5 @@
 import numpy as np
-from src.read_data import read_subset_features,read_subset_features_patches
+from src.read_data import read_subset_features
 import os
 
 
@@ -57,7 +57,7 @@ def dataset(main_dir,folio_names_train,folio_names_val,class_names,modality, deb
         main_dir (str): Path to the main directory containing the dataset.
         folio_names_train (list): List of folder or file names for training data.
         folio_names_val (list): List of folder or file names for validation data.
-        class_names (list): List of possible class names for classification tasks.
+        class_names (dict): Dict of possible class names for classification tasks.
         modality (str): Specific data modality to be used (e.g., type of feature or data format).
 
     Returns:
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     folios_val = ""#["msXL_344v_b"]
     win = 10
     box = "val"
-    features_train,_ =  dataset(main_dir,folios_train,folios_val,classes_dict,modalities,win, debugging=False)
+    features_train,_ =  dataset(main_dir,folios_train,folios_val,classes_dict,modalities,win)
     print("Features train shape", features_train[0].shape)
     #print("Features val shape", features_val[0].shape)
     print("Labels shape", features_train[1].shape)

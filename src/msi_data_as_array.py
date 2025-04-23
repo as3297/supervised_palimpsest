@@ -1,7 +1,6 @@
 import numpy as np
 import os, sys
-from PIL import ImageOps
-
+from PIL import ImageOps,Image
 from src.pil_image_cube import ImageCubePILobject
 from src.pixel_coord import ClassCoord
 import os
@@ -14,9 +13,11 @@ class NormalizingGray():
     def __init__(self, pil_msi_obj: ImageCubePILobject):
         """Reads means gray value of specralon target for reflectance band or max values for flourescent band"""
         self.pil_msi_obj = pil_msi_obj
+        self.pil_msi_img = self.pil_msi_obj.read_pil_band_ims_list()
         self.spectralon_coords = self.read_spectralon_coords()
         self.max_values_dict = read_json(osp(self.pil_msi_obj.folio_dir,"bands_max_val.json"))
         self.max_values = self.make_array_of_normalizing_values()
+        close_all_images(self.pil_msi_img)
 
     def read_spectralon_coords(self):
         self.spectralon_mask_path = osp(self.pil_msi_obj.image_dir, "mask", self.pil_msi_obj.folio_name + "-" + "spectralon_black.png")
@@ -25,14 +26,16 @@ class NormalizingGray():
 
     def read_spectralon_value(self,band_idx):
         """Read spectralon value for one band"""
-        im_band = self.pil_msi_obj.pil_msi_img[band_idx]
-        points_per_band = list(map(im_band.getpixel, self.spectralon_coords))
+        im_band = self.pil_msi_img[band_idx]
+        points_per_band = im_band.getpixel(self.spectralon_coords[0])
+        #points_per_band = list(map(im_band.getpixel, self.spectralon_coords))
         mean_grey_val = np.mean(points_per_band).astype(np.float32)
         return mean_grey_val
 
     def make_array_of_normalizing_values(self):
         band_list = self.pil_msi_obj.band_list
         max_vals = np.zeros((len(band_list)))
+
         for band_idx,band_name in enumerate(band_list):
             if band_name[0].lower()=="m":
                 max_val = self.read_spectralon_value(band_idx)
@@ -72,8 +75,8 @@ class DataFromPILImageCube():
     """
     def __init__(self, pil_msi_obj:ImageCubePILobject):
         self.pil_msi_obj = pil_msi_obj
-        norm_val_ob = NormalizingGray(self.pil_msi_obj)
-        self.max_vals = norm_val_ob.max_values
+        self.max_vals = NormalizingGray(self.pil_msi_obj).max_values
+
 
     def standartize(self,msi_img):
         """
@@ -84,66 +87,11 @@ class DataFromPILImageCube():
         return msi_img
 
     def convert_pil_to_array(self,pil_msi_obj):
-        msi_img = conver_pil_msi_ims_to_array(pil_msi_obj.pil_msi_img,
-                                              pil_msi_obj.width,
-                                              pil_msi_obj.height,
-                                              pil_msi_obj.nb_bands)
+        msi_img = read_fullpage(pil_msi_obj)
         return msi_img
 
 
 
-class CoordsWindow():
-    def __init__(self,pil_img_obj:ImageCubePILobject):
-        """
-        Factory for data ROI class parameters
-        """
-        self.width = pil_img_obj.width
-        self.height = pil_img_obj.height
-        self.pil_msi_img = pil_img_obj.pil_msi_img
-        self.bands_list = pil_img_obj.band_list
-        self.nb_bands = pil_img_obj.nb_bands
-    def close_all_images(self):
-        """
-        Close all opened images
-        """
-        for band_obj in self.pil_msi_img:
-            band_obj.close()
-
-
-class BboxWindow(CoordsWindow):
-    def __init__(self,bbox,pil_msi_obj):
-        """
-        ROI class in shape of box
-        :param bbox:  [left, upper, right, and lower] pixel coordinate
-        """
-        super().__init__(pil_msi_obj)
-        self.bbox = bbox # left, upper, right, and lower pixel coordinate
-        if bbox[2]>=self.width or bbox[3]>=self.height:
-            raise ValueError(f"Error right top window corner {bbox[2],bbox[3]} coordinate exceeds the image size {self.pil_msi_obj.width,self.pil_msi_obj.height}")
-        self.width = self.bbox[2] - self.bbox[0]
-        self.height = self.bbox[3] - self.bbox[1]
-        self.pil_msi_img = self.read_fragment()
-
-    def read_fragment(self):
-        """
-        Read image extracted from bounding box
-        :return: array with dim [nb_bands,nb_points]
-        """
-        fragment_pil_msi_img = []
-        for im_band in self.pil_msi_img:
-                fragment_pil_msi_img.append(im_band.crop(self.bbox))
-        return fragment_pil_msi_img
-
-
-class PointsWindow(CoordsWindow):
-    def __init__(self, pil_msi_obj: ImageCubePILobject, points_coord):
-        """
-        ROI class as individual points
-        :param bbox:
-        """
-        super().__init__(pil_msi_obj)
-        self.points_coord = points_coord
-        self.nb_points = len(self.points_coord)
 
 class FullImageFromPILImageCube(DataFromPILImageCube):
     def __init__(self,pil_msi_obj):
@@ -166,12 +114,39 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
 
         """
         super().__init__(pil_msi_obj)
+
         self.bbox = bbox
-        self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
-        self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
+        self.check_if_box_inside()
+        self.width = self.bbox[2] - self.bbox[0]
+        self.height = self.bbox[3] - self.bbox[1]
+        self.unstretch_ims_img = self.convert_pil_to_array()
         ims_img = self.standartize(self.unstretch_ims_img)
         self.ims_img = np.transpose(ims_img, axes=[1, 2, 0])
 
+    def convert_pil_to_array(self):
+        """
+        Read image extracted from bounding box
+        :return: array with dim [nb_bands,nb_points]
+        """
+        fragment_pil_msi_img = []
+        msi_ims = np.zeros([self.nb_bands, self.height, self.width])
+        pil_msi_img = self.pil_msi_obj.read_pil_band_ims_list()
+        for band_idx, im_band in enumerate(pil_msi_img):
+            im_band = im_band.crop(self.bbox)
+            im = np.array(im_band)
+            msi_ims[band_idx] = im
+        close_all_images(pil_msi_img)
+
+        return fragment_pil_msi_img
+
+    def check_if_box_inside(self):
+        """
+        Check if the bounding box is inside the image dimensions
+        :return: True if the box is inside, False otherwise
+        """
+        if self.bbox[2] >= self.pil_msi_obj.width or self.bbox[3] >= self.pil_msi_obj.height:
+            raise ValueError(
+                f"Error right top window corner {self.bbox[2], self.bbox[3]} coordinate exceeds the image size {self.pil_msi_obj.width, self.pil_msi_obj.height}")
 
 
 class PointsfromMSI_PIL(DataFromPILImageCube):
@@ -204,23 +179,25 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         """
         super().__init__(pil_msi_obj)
         self.points_coord = points_coord
-        self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
+        self.nb_points = len(self.points_coord)
         self.unstretch_ims_img = None
-        self.unstretch_points = self.convert_pil_points_to_array(self.pil_msi_obj)
+        self.unstretch_points = self.convert_pil_points_to_array()
         points = self.standartize(self.unstretch_points)
         self.points = np.transpose(points,[1,0])
 
 
-    def convert_pil_points_to_array(self,pil_msi_obj):
+    def convert_pil_points_to_array(self):
         """
         Read values extracted from points
         :param points_coord:
         :return: array with dim [nb_bands,nb_points]
         """
-        points = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points])
-        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
+        points = np.zeros([self.pil_msi_obj.nb_bands,self.nb_points])
+        pil_msi_img = self.pil_msi_obj.read_pil_band_ims_list()
+        for band_idx,im_band in enumerate(pil_msi_img):
             points_per_band = list(map(im_band.getpixel,self.points_coord))
             points[band_idx] = points_per_band
+        close_all_images(pil_msi_img)
         return points
 
 class PatchesfromMSI_PIL(DataFromPILImageCube):
@@ -232,11 +209,11 @@ class PatchesfromMSI_PIL(DataFromPILImageCube):
         super().__init__(pil_msi_obj)
         self.points_coord = points_coord
         self.half_win = win // 2
-        self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
-        self.unstretch_ims_imgs = self.convert_pil_points_to_patches(self.pil_msi_obj)
-        self.ims_imgs = self.standartize(self.unstretch_ims_imgs)
-        self.ims_imgs = np.transpose(self.ims_imgs, axes=[1, 2, 3, 0])
-        self.pil_msi_obj.close_all_images()
+        self.points_coord = points_coord
+        self.nb_points = len(self.points_coord)
+        self.unstretch_ims_img = self.convert_pil_points_to_patches()
+        self.ims_img = self.standartize(self.unstretch_ims_img)
+        self.ims_img = np.transpose(self.ims_imgs, axes=[1, 2, 3, 0])
 
     def read_band_fragment(self,point_coord,im_band):
         """
@@ -271,119 +248,22 @@ class PatchesfromMSI_PIL(DataFromPILImageCube):
         return np.array(fragment)
 
 
-    def convert_pil_points_to_patches(self,pil_msi_obj):
+    def convert_pil_points_to_patches(self):
         """
         Read values extracted from points
         :param points_coord:
         :return: array with dim [nb_bands,nb_points]
         """
         win = self.half_win * 2 + 1
-        patchs = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points,win,win],dtype=np.float32)
-        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
+        patchs = np.zeros([self.pil_msi_obj.nb_bands,self.nb_points,win,win],dtype=np.float32)
+        pil_msi_img = self.pil_msi_obj.read_pil_band_ims_list()
+        for band_idx,im_band in enumerate(pil_msi_img):
             fragments_per_band = list(map(self.read_band_fragment,self.points_coord,repeat(im_band)))
             patchs[band_idx,:,:,:] = np.stack(fragments_per_band,axis=0)
+        close_all_images(pil_msi_img)
         return patchs
 
 
-class PointfromMSI_PIL(DataFromPILImageCube):
-    def __init__(self,pil_msi_obj: ImageCubePILobject,point_coord):
-        """
-        read points from image
-        :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
-        :param points_coords: list of coordinates
-        """
-        super().__init__(pil_msi_obj)
-        self.point_coord = point_coord
-        self.unstretch_ims_img = None
-        self.unstretch_point = self.convert_pil_points_to_array(self.pil_msi_obj)
-        self.point = self.standartize(self.unstretch_point)
-
-
-    def convert_pil_points_to_array(self,pil_msi_obj):
-        """
-        Read values extracted from points
-        :param points_coord:
-        :return: array with dim [nb_bands,nb_points]
-        """
-        point = np.zeros([pil_msi_obj.nb_bands,])
-        for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
-            point_per_band = im_band.getpixel(self.point_coord)
-            point[band_idx] = point_per_band
-        return point
-
-class PointsfromRatio(DataFromPILImageCube):
-    def __init__(self, pil_msi_obj: ImageCubePILobject, points_coord):
-        """
-        read points from image
-        :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
-        :param points_coords: list of coordinates
-        """
-        super().__init__(pil_msi_obj)
-        self.points_coord = points_coord
-        self.pil_msi_obj = PointsWindow(pil_msi_obj, self.points_coord)
-        self.unstretch_ims_img = None
-
-        self.points_ratio_W420B47_W385UVB = self.convert_pil_points_to_array_ratio_W420B47_W385UVB(self.pil_msi_obj).reshape([-1,1])
-        self.points_ratio_W365UVP_W385UVB = self.convert_pil_points_to_array_ratio_W365UVP_W385UVB(self.pil_msi_obj).reshape([-1,1])
-        print("ratio shape,", self.points_ratio_W365UVP_W385UVB.shape)
-
-    def convert_pil_points_to_array_ratio_W365UVP_W385UVB(self,pil_msi_obj):
-        """
-        Read values extracted from points
-        :param points_coord:
-        :return: array with dim [nb_bands,nb_points]
-        """
-        for band_idx, im_band in enumerate(pil_msi_obj.bands_list):
-            if im_band[0].lower() == "w":
-                if im_band == "W365UVP_27_F":
-                    points_W365UVP = list(map(pil_msi_obj.pil_msi_img[band_idx].getpixel, self.points_coord))
-                if im_band == "W385UVB_21_F":
-                    points_W385UVB = list(map(pil_msi_obj.pil_msi_img[band_idx].getpixel,self.points_coord))
-        points_ratio = np.array(points_W365UVP)/(np.array(points_W385UVB)+1e-06)
-        return points_ratio
-
-    def convert_pil_points_to_array_ratio_W420B47_W385UVB(self,pil_msi_obj):
-        """
-        Read values extracted from points
-        :param points_coord:
-        :return: array with dim [nb_bands,nb_points]
-        """
-        for band_idx, im_band in enumerate(pil_msi_obj.bands_list):
-            if im_band[0].lower() == "w":
-                if im_band == "W420B47_42_F":
-                    points_W420B47 = list(map(pil_msi_obj.pil_msi_img[band_idx].getpixel, self.points_coord))
-                if im_band == "W385UVB_21_F":
-                    points_W385UVB = list(map(pil_msi_obj.pil_msi_img[band_idx].getpixel,self.points_coord))
-        points_ratio = np.array(points_W420B47)/(np.array(points_W385UVB)+1e-06)
-        return points_ratio
-
-class PointsfromBand(DataFromPILImageCube):
-    def __init__(self, pil_msi_obj: ImageCubePILobject, points_coord, band_name):
-        """
-        read points from image
-        :param msi_img: list of PIL image objects of each band of MSI image
-        :param max_vals_per_band:
-        :param points_coords: list of coordinates
-        """
-        super().__init__(pil_msi_obj)
-        self.points_coord = points_coord
-        self.band_name = band_name
-        self.pil_msi_obj = PointsWindow(pil_msi_obj, self.points_coord)
-        self.unstretch_ims_img = None
-        self.points = self.convert_pil_points_to_array(self.pil_msi_obj,self.band_name).reshape([-1,1])
-
-    def convert_pil_points_to_array(self,pil_msi_obj,band_name):
-        """
-        Read values extracted from points
-        :param points_coord:
-        :return: array with dim [nb_bands,nb_points]
-        """
-        for band_idx, band in enumerate(pil_msi_obj.bands_list):
-            if band == band_name:
-                points = list(map(pil_msi_obj.pil_msi_img[band_idx].getpixel, self.points_coord))
-        return np.array(points)
 
 def strech_contrast(val,max_val):
     """Strech im by max value without oversaturated pixels
@@ -410,6 +290,31 @@ def conver_pil_msi_ims_to_array(pil_msi_img,width,height,nb_bands):
         im = np.array(im_band)
         msi_ims[band_idx] = im
     return msi_ims
+
+def read_pixels(palimp_obj,points_coord):
+    """
+    Read pixels from image
+    :param msi_img: list of PIL image objects of each band of MSI image
+    :param points_coord: list of tuples with coordinates of points
+    :return: array with dim [nb_bands,nb_points]
+    """
+    pil_msi_img = palimp_obj.read_pil_band_ims_list()
+    points = np.zeros([len(points_coord),len(pil_msi_img)])
+    for band_idx,im_band in enumerate(pil_msi_img):
+        points_per_band = list(map(im_band.getpixel,points_coord))
+        points[:,band_idx] = points_per_band
+    close_all_images(pil_msi_img)
+    return points
+
+def read_fullpage(palimp_obj):
+    pil_msi_img = palimp_obj.read_pil_band_ims_list()
+    msi_ims = conver_pil_msi_ims_to_array(pil_msi_img, palimp_obj.width, palimp_obj.height, palimp_obj.nb_bands)
+    close_all_images(pil_msi_img)
+    return msi_ims
+
+def close_all_images(pil_msi_img_list):
+    for band_obj in pil_msi_img_list:
+        band_obj.close()
 
 
 

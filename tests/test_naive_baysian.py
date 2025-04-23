@@ -1,5 +1,5 @@
 import unittest
-from miscellaneous import naive_baysian as nb
+from src.miscellaneous import naive_baysian as nb
 
 
 class TestNaiveBayesian(unittest.TestCase):

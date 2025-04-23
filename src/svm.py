@@ -47,7 +47,7 @@ if __name__ == "__main__":
     folios_train = ["msXL_335v_b"]
     win = 0
     box = None
-    features_train,_ =  dataset(main_dir,folios_train,[],classes_dict,modalities,win, debugging=False)
+    features_train,_ =  dataset(main_dir,folios_train,[],classes_dict,modalities,win)
     print("Features shape", features_train[0].shape)
     print("Labels shape", features_train[1].shape)
-    model,accuracy = run_kernel_svm(X, y)
+    model,accuracy = run_kernel_svm(features_train[0], features_train[1])

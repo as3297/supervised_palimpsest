@@ -1,5 +1,4 @@
 import os
-import numpy as np
 
 
 maindir = r"c:\Data\PhD\palimpsest\Victor_data\Paris_Coislin"

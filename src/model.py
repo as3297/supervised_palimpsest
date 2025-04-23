@@ -80,6 +80,8 @@ def build_model_multiclass(nb_features,nb_units_per_layer,nb_layers,dropout_rate
     elif win<=0:
         inputs = Input(shape=(nb_features,), name="counts")
         x = fcn_base(nb_layers,nb_units_per_layer,dropout_rate,batch_norm, inputs)
+    else:
+        raise ValueError("win should be a float number or int number, but got {}".format(win.__class__))
 
     outputs = Dense(nb_classes, name="predictions",activation="softmax",kernel_initializer="he_normal",)(x)
     return Model(inputs=inputs, outputs=outputs)

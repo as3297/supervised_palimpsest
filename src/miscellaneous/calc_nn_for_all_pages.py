@@ -4,9 +4,9 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(root_dir)
-from read_data import read_msi_image_object, read_subset_features, read_msi_image_patch
-from msi_data_as_array import FullImageFromPILImageCube
-from util import save_pickle
+from src.read_data import read_msi_image_object, read_subset_features, read_msi_image_patch
+from src.msi_data_as_array import FullImageFromPILImageCube
+from src.util import save_pickle
 from scipy.spatial import distance
 from joblib import Parallel, delayed
 import numpy as np

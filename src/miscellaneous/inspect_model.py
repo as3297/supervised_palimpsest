@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 
 saved_model_path = r"C:\Data\PhD\ML_palimpsests\Supervised_palimpsest\training\20240524-215116\model.keras"
 imported = tf.keras.models.load_model(saved_model_path)
