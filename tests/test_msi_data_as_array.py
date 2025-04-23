@@ -8,14 +8,15 @@ sys.path.append(root_dir)
 from src.msi_data_as_array import PatchesfromMSI_PIL, FragmentfromMSI_PIL
 from src.pil_image_cube import ImageCubePILobject
 from matplotlib import pyplot as plt
+from src.util import read_band_list
 
 
 class TestPatchesfromMSI_PIL():
     def __init__(self,palimpsest_name,folio_name,modalities,nb_points):
 
         self.win = 100
-
-        self.pil_msi_obj = ImageCubePILobject(palimpsest_name,folio_name,modalities,0)
+        band_list = read_band_list(os.path.join(palimpsest_name,folio_name,"band_list.txt"),modalities)
+        self.pil_msi_obj = ImageCubePILobject(palimpsest_name, folio_name, band_list, 0)
         self.nb_bands = self.pil_msi_obj.nb_bands
         self.does_it_align(nb_points)
 

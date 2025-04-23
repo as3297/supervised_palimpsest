@@ -1,14 +1,15 @@
 import copy
 
+from src.miscellaneous.tiff_to_png import band_list
 from src.msi_data_as_array import FullImageFromPILImageCube,PatchesfromMSI_PIL,FragmentfromMSI_PIL
 import numpy as np
 from matplotlib import pyplot as plt
-from skimage import io
 import os
 from src.read_data import read_subset_features, read_subset_features_patches
 from src.dataset import read_features,stack_features_labels
 from src.pil_image_cube import ImageCubePILobject
 from PIL import Image
+from src.util import read_band_list
 
 root_dir = r"D:"
 palimpsest_name = "Verona_msXL"
@@ -27,6 +28,7 @@ def read_mask(root_dir,palimpsest_name,folio_name,class_name):
         im = im>0.5
         im = im.astype(int)
     return im
+
 def calculate_zero_elements(array):
     """
     Calculate the number of zero elements in a given array.
@@ -41,8 +43,8 @@ def test_class_image_vs_real_image():
     cur_folio_names = [folio_names[0]]
     features_ut,xs_ut,ys_ut = read_subset_features(main_dir,cur_folio_names[0],class_name,modalities,box)
     features_dict = read_features(main_dir, cur_folio_names, class_dict, modalities,box,win)
-
-    msi_pil_obj = ImageCubePILobject(main_dir,cur_folio_names[0],modalities,0)
+    band_list = read_band_list(os.path.join(main_dir,cur_folio_names[0],"band_list.txt"),modalities)
+    msi_pil_obj = ImageCubePILobject(main_dir, cur_folio_names[0], band_list, 0)
     msi_im = FullImageFromPILImageCube(msi_pil_obj).ims_img
     msi_im_subst = copy.deepcopy(msi_im)
     msi_im_subst[ys_ut,xs_ut] = features_dict[class_dict[class_name]]
@@ -73,7 +75,7 @@ def plot_class_image_vs_real_image():
     features_ut,xs_ut,ys_ut = read_subset_features(main_dir,cur_folio_names[0],class_name,modalities,box)
     features_dict = read_features(main_dir, cur_folio_names, class_dict, modalities,box,win)
 
-    msi_pil_obj = ImageCubePILobject(main_dir,cur_folio_names[0],modalities,0)
+    msi_pil_obj = ImageCubePILobject(main_dir, cur_folio_names[0], band_list, 0)
     msi_im = FullImageFromPILImageCube(msi_pil_obj).ims_img
     msi_im_subst = copy.deepcopy(msi_im)
     msi_im_subst[ys_ut,xs_ut] = features_dict[class_dict[class_name]]
@@ -146,7 +148,7 @@ def does_it_align():
     hw = win // 2
     points_coord = [(init_point[0] + i*(hw*2+1), init_point[1]) for i in range(nb_points)]
     frag_coord = [init_point[0]-hw,init_point[1]-hw,init_point[0]+nb_points*(2*hw+1)-hw,init_point[1]+(2*hw+1)-hw]
-    pil_msi_obj = ImageCubePILobject(main_dir,folio_names[0],modalities,0)
+    pil_msi_obj = ImageCubePILobject(main_dir, folio_names[0], band_list, 0)
     patches_msi = PatchesfromMSI_PIL(pil_msi_obj, points_coord, win).ims_imgs
     features_dict = {"undertext":patches_msi}
     patches_msi, labels = stack_features_labels(features_dict)
@@ -189,6 +191,6 @@ if __name__ == '__main__':
     #test_class_image_vs_real_image()
     #test_stack_features_labels()
     #test_nb_dimenssion()
-    #does_it_align()
-    test_nb_of_patches()
+    does_it_align()
+    #test_nb_of_patches()
 

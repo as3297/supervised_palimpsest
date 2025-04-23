@@ -7,6 +7,7 @@ from pil_image_cube import ImageCubePILobject
 from read_data import read_x_y_coords
 import time
 
+from src.util import read_band_list
 from tests.test_dataset import palimpsest_name
 
 
@@ -112,13 +113,14 @@ def create_tfrecords(base_data_dir,folio_names,window_size, classes_dict,modalit
     BOX = None
     chunk_size = 1000
     # Use tf.io.TFRecordWriter within a 'with' statement for safe file handling
+    band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
 
     for folio_name in folio_names:
         for class_name, label in classes_dict.items():
             # Iterate through patch specifications with a progress bar
             palimpsest_name = os.path.basename(base_data_dir)
             xs,ys = read_x_y_coords(base_data_dir, folio_name, class_name, BOX)
-            pil_msi_obj = ImageCubePILobject(base_data_dir, folio_name, modalities, 0)
+            pil_msi_obj = ImageCubePILobject(base_data_dir, folio_name, band_list, 0)
             coords = list(zip(xs, ys))
             bands = pil_msi_obj.band_list
             output_tfrecord_path = os.path.join(base_data_dir, folio_name, f"{class_name}_{window_size}.tfrecord")
