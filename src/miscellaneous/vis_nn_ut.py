@@ -5,7 +5,7 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(root_dir)
-from util import read_pickle,save_json
+from src.util import read_pickle,save_json
 import os
 from skimage import io
 import numpy as np

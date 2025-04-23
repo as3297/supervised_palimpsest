@@ -17,7 +17,7 @@ def read_png_image_tf(file_path):
     Reads a png image file, decodes it, and optionally rotates it.
     Args:
       file_path: A scalar string tensor with the image file path.
-      rotate_angle: An integer; must be 0, 90, 180, or 270.
+
     Returns:
       A decoded image tensor with shape [H, W, C].
     """
@@ -25,8 +25,6 @@ def read_png_image_tf(file_path):
     # Decode using TensorFlow I/O (assumes the image is a TIFF)
     image = tf.image.decode_png(image_bytes,channels=1)
     return image
-
-
 
 
 # --- Building a tf.data Dataset that avoids tf.py_function ---
@@ -41,7 +39,6 @@ def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding
       patch_specs: List of tuples (base_path, [x, y], label).
       window_size: Integer patch size.
       band_list: List of band names.
-      rotate_angle: Rotation angle.
       padding_fill: Value for padding.
       batch_size: Batch size.
       shuffle: Whether to shuffle.

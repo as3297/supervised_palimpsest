@@ -3,14 +3,13 @@ import os, sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(root_dir)
-from util import calculate_confusion_matrix, load_channel_weights
+from src.util import calculate_confusion_matrix, load_channel_weights
 import numpy as np
-from dataset import dataset
+from src.dataset import dataset
 import os
-from tensorflow.keras.models import model_from_json
-from noisy_labels.channel import Channel
+from src.noisy_labels.channel import Channel
 from tensorflow.keras.models import load_model
-from tensorflow.keras import Model,Input
+from tensorflow.keras import Model
 
 
 

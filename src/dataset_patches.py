@@ -1,5 +1,3 @@
-import copy
-
 import matplotlib.pyplot as plt
 import os
 from src.util import read_band_list
@@ -17,10 +15,10 @@ class ImageCubeObject:
         The folder should contain only images of actual bands.
         The til file naming format is "folio name"-"band name"_"band index"_F.tif, e.g. msXL_315r_b-M0365UV_01_F.tif,
         where msXL_315r_b - folio name, M0365UV - band name, 01 - band index.
-        :param image_dir: directory with tif image of palimpsest
+        :param folio_dir: directory with tif image of palimpsest
         :param folio_name: name of the folio
         :param modalities: list of modalities
-        :param coord: (left, upper, right, lower) tuple of bounding box coordinates
+        :param rotate_angle: angle of rotation of the image
         """
         self.folio_dir = folio_dir
         self.image_dir = os.path.join(folio_dir, folio_name)

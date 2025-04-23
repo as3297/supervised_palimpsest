@@ -1,8 +1,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from read_data import read_subset_features,read_msi_image_object
-from msi_data_as_array import FragmentfromMSI_PIL,NormalizingGray
+from src.read_data import read_msi_image_object
+from src.msi_data_as_array import FragmentfromMSI_PIL,NormalizingGray
 
 # Display spectralon target for every band
 # Load non-undertext and undertext masks

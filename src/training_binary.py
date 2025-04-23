@@ -124,7 +124,7 @@ def training(
     Parameters:
         current_time (str): Timestamp used for naming directories, defaults to current time.
         model_dir (str): Directory path where the trained model and logs will be saved.
-        EPOCHS (int): Number of training epochs.
+        epochs (int): Number of training epochs.
         batch_size (int): Batch size for training.
         modalities (list): List of data modalities to be used in the dataset.
         nb_nodes_in_layer (int): Number of nodes in each layer of the model.

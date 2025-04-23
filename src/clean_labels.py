@@ -1,5 +1,3 @@
-from tensorflow.python.ops.gen_clustering_ops import nearest_neighbors
-
 from read_data import read_msi_image_object,read_x_y_coords
 from msi_data_as_array import PointsfromMSI_PIL
 from imblearn.under_sampling import RepeatedEditedNearestNeighbours
