@@ -32,7 +32,7 @@ class NormalizingGray():
 
     def make_array_of_normalizing_values(self):
         band_list = self.pil_msi_obj.band_list
-        max_vals = np.zeros((len(band_list)))
+        max_vals = np.zeros((len(band_list)),dtype=np.float32)
         for band_idx,band_name in enumerate(band_list):
             if band_name[0].lower()=="m":
                 max_val = self.read_spectralon_value(band_idx)
@@ -102,12 +102,7 @@ class CoordsWindow():
         self.pil_msi_img = pil_img_obj.pil_msi_img
         self.bands_list = pil_img_obj.band_list
         self.nb_bands = pil_img_obj.nb_bands
-    def close_all_images(self):
-        """
-        Close all opened images
-        """
-        for band_obj in self.pil_msi_img:
-            band_obj.close()
+
 
 
 class BboxWindow(CoordsWindow):
@@ -156,6 +151,7 @@ class FullImageFromPILImageCube(DataFromPILImageCube):
         im = copy.deepcopy(self.unstretch_ims_img)
         ims_img = self.standartize(im)
         self.ims_img = np.transpose(ims_img, axes=[1, 2, 0])
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
 class FragmentfromMSI_PIL(DataFromPILImageCube):
     def __init__(self,pil_msi_obj:ImageCubePILobject,bbox):
@@ -169,8 +165,9 @@ class FragmentfromMSI_PIL(DataFromPILImageCube):
         self.bbox = bbox
         self.pil_msi_obj = BboxWindow(self.bbox,pil_msi_obj)
         self.unstretch_ims_img = self.convert_pil_to_array(self.pil_msi_obj)
-        ims_img = self.standartize(self.unstretch_ims_img)
+        ims_img = self.standartize(copy.deepcopy(self.unstretch_ims_img))
         self.ims_img = np.transpose(ims_img, axes=[1, 2, 0])
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
 
 
@@ -207,8 +204,9 @@ class PointsfromMSI_PIL(DataFromPILImageCube):
         self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
         self.unstretch_ims_img = None
         self.unstretch_points = self.convert_pil_points_to_array(self.pil_msi_obj)
-        points = self.standartize(self.unstretch_points)
+        points = self.standartize(copy.deepcopy(self.unstretch_points))
         self.points = np.transpose(points,[1,0])
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
 
     def convert_pil_points_to_array(self,pil_msi_obj):
@@ -234,9 +232,9 @@ class PatchesfromMSI_PIL(DataFromPILImageCube):
         self.half_win = win // 2
         self.pil_msi_obj = PointsWindow(pil_msi_obj,self.points_coord)
         self.unstretch_ims_imgs = self.convert_pil_points_to_patches(self.pil_msi_obj)
-        self.ims_imgs = self.standartize(self.unstretch_ims_imgs)
+        self.ims_imgs = self.standartize(copy.deepcopy(self.unstretch_ims_imgs))
         self.ims_imgs = np.transpose(self.ims_imgs, axes=[1, 2, 3, 0])
-        self.pil_msi_obj.close_all_images()
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
     def read_band_fragment(self,point_coord,im_band):
         """
@@ -278,7 +276,7 @@ class PatchesfromMSI_PIL(DataFromPILImageCube):
         :return: array with dim [nb_bands,nb_points]
         """
         win = self.half_win * 2 + 1
-        patchs = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points,win,win],dtype=np.float32)
+        patchs = np.zeros([pil_msi_obj.nb_bands,pil_msi_obj.nb_points,win,win],dtype=np.uint16)
         for band_idx,im_band in enumerate(pil_msi_obj.pil_msi_img):
             fragments_per_band = list(map(self.read_band_fragment,self.points_coord,repeat(im_band)))
             patchs[band_idx,:,:,:] = np.stack(fragments_per_band,axis=0)
@@ -297,7 +295,8 @@ class PointfromMSI_PIL(DataFromPILImageCube):
         self.point_coord = point_coord
         self.unstretch_ims_img = None
         self.unstretch_point = self.convert_pil_points_to_array(self.pil_msi_obj)
-        self.point = self.standartize(self.unstretch_point)
+        self.point = self.standartize(copy.deepcopy(self.unstretch_point))
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
 
     def convert_pil_points_to_array(self,pil_msi_obj):
@@ -328,6 +327,7 @@ class PointsfromRatio(DataFromPILImageCube):
         self.points_ratio_W420B47_W385UVB = self.convert_pil_points_to_array_ratio_W420B47_W385UVB(self.pil_msi_obj).reshape([-1,1])
         self.points_ratio_W365UVP_W385UVB = self.convert_pil_points_to_array_ratio_W365UVP_W385UVB(self.pil_msi_obj).reshape([-1,1])
         print("ratio shape,", self.points_ratio_W365UVP_W385UVB.shape)
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
     def convert_pil_points_to_array_ratio_W365UVP_W385UVB(self,pil_msi_obj):
         """
@@ -373,6 +373,7 @@ class PointsfromBand(DataFromPILImageCube):
         self.pil_msi_obj = PointsWindow(pil_msi_obj, self.points_coord)
         self.unstretch_ims_img = None
         self.points = self.convert_pil_points_to_array(self.pil_msi_obj,self.band_name).reshape([-1,1])
+        close_all_images(self.pil_msi_obj.pil_msi_img)
 
     def convert_pil_points_to_array(self,pil_msi_obj,band_name):
         """
@@ -411,6 +412,12 @@ def conver_pil_msi_ims_to_array(pil_msi_img,width,height,nb_bands):
         msi_ims[band_idx] = im
     return msi_ims
 
+def close_all_images(pil_imds_list):
+    """
+    Close all opened images
+    """
+    for band_obj in pil_imds_list:
+        band_obj.close()
 
 
 
