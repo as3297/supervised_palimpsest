@@ -1,138 +1,112 @@
+import tensorflow as tf
 import os
-
-import numpy as np
 from matplotlib import pyplot as plt
 
-from src.dataset_patches import ImageCubeObject
-import tensorflow as tf
 
-from src.read_data import read_x_y_coords
-from src.util import read_band_list
+def standartize(im, spectralon_mean):
+    """Standartized image by grey_value
+    im  - is tensor of shape (height, width, channels)
+    spectralon_mean - is tensor of shape (channels,)"""
 
+    im = im / tf.math.maximum(spectralon_mean, 1e-6)
+    im = tf.clip_by_value(im, clip_value_min=0.0, clip_value_max=1.0)
 
-# --- Utility functions implemented with pure TensorFlow ops ---
+    return im
 
-def read_png_image_tf(file_path):
+# Parse the TFRecord Example
+def parse_tfrecord_fn(example):
     """
-    Reads a png image file, decodes it, and optionally rotates it.
-    Args:
-      file_path: A scalar string tensor with the image file path.
-
-    Returns:
-      A decoded image tensor with shape [H, W, C].
+    Parse the serialized TFRecord Example.
+    Adjust the features dictionary to match your TFRecord structure.
     """
-    image_bytes = tf.io.read_file(file_path)
-    # Decode using TensorFlow I/O (assumes the image is a TIFF)
-    image = tf.image.decode_png(image_bytes,channels=1)
-    return image
+    feature_description = {
+        'band_list': tf.io.VarLenFeature(tf.string),
+        'palimpsest_name': tf.io.FixedLenFeature([], tf.string),
+        'folio_name': tf.io.FixedLenFeature([], tf.string),
+        'coords': tf.io.FixedLenFeature([2], tf.int64),
+        'patch_raw': tf.io.FixedLenFeature([], tf.string),
+        'label': tf.io.FixedLenFeature([], tf.int64),
+        'patch_shape': tf.io.FixedLenFeature([3], tf.int64),
+        'spectralon_mean': tf.io.FixedLenFeature([], tf.string),
+    }
+    parsed_example = tf.io.parse_single_example(example, feature_description)
 
+    # Deserialize tensors if needed
+    parsed_example['patch_raw'] = tf.io.parse_tensor(parsed_example['patch_raw'], out_type=tf.uint16)
+    parsed_example['spectralon_mean'] = tf.io.parse_tensor(parsed_example['spectralon_mean'], out_type=tf.float32)
+    # Reshape the patch tensor
+    patch_shape = parsed_example['patch_shape']
+    patch_shape = tf.cast(patch_shape, tf.int32)
+    parsed_example['patch_raw'] = tf.reshape(parsed_example['patch_raw'], patch_shape)
+    # Convert patch to float32
+    parsed_example['patch_raw'] = tf.cast(parsed_example['patch_raw'], tf.float32)
+    # Scale patch by spectralon mean
+    out = standartize(parsed_example['patch_raw'], parsed_example['spectralon_mean'])
+
+    return out, parsed_example['label']
 
 # --- Building a tf.data Dataset that avoids tf.py_function ---
 
-def build_patch_dataset_with_labels(patch_specs, window_size, band_list, padding_fill=0, batch_size=32,
-                                    shuffle=True, buffer_size=10000):
+def dataset_tf(main_data_dir, folio_names,window_size,classes_dict, batch_size):
     """
-    Builds a tf.data.Dataset yielding patches and labels.
-    Each element of patch_specs is a tuple (base_path, coord, label).
-
+    Create a tf.data pipeline to read, parse, shuffle, and batch samples from TFRecord files.
     Args:
-      patch_specs: List of tuples (base_path, [x, y], label).
-      window_size: Integer patch size.
-      band_list: List of band names.
-      padding_fill: Value for padding.
-      batch_size: Batch size.
-      shuffle: Whether to shuffle.
-      buffer_size: Buffer size.
-
+        tfrecord_dir: Directory where TFRecord files are stored.
+        batch_size: Batch size for training.
     Returns:
-      A tf.data.Dataset yielding (patch, label) pairs.
+        A tf.data.Dataset object.
     """
-    # Unpack patch_specs into three lists.
-    base_paths, coords, labels = zip(*patch_specs)
-
-    base_paths_tensor = tf.constant(base_paths)
-    coords_tensor = tf.constant(coords, dtype=tf.int32)  # shape [N, 2]
-    labels_tensor = tf.constant(labels)  # shape [N]
-
-    ds = tf.data.Dataset.interleave((base_paths_tensor, coords_tensor, labels_tensor))
-
-    if shuffle:
-        ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)
-
-    ds = ds.map(
-        lambda base_path, coord, label: process_patch_with_label(
-            (base_path, coord, label), window_size, band_list, padding_fill),
-        num_parallel_calls=1,
-    )
-    # Cache dataset in memory after first epoch (if it fits!)
-    #dataset = ds.cache() # Uncomment if dataset fits in RAM
-    ds = ds.batch(batch_size)
-    ds = ds.prefetch(tf.data.AUTOTUNE)#tf.data.AUTOTUNE
-    return ds
-
-def calculate_window_size(half_window):
-    """Calculate the patch window size."""
-    return half_window * 2 + 1
-
-def dataset_tf(main_data_dir,folio_names,classes_dict,modalities,window_size, batch_size=32, shuffle=True,
-                        buffer_size=10000,box=None):
-    half_window = window_size // 2  # Ensures pixels are centered in the extracted window
-    window_size = calculate_window_size(half_window)
-    png_folder = "png_images_standardized"
-    patch_specs = []
+    tfrecord_files = []
     for folio_name in folio_names:
-        msi_obj = ImageCubeObject(main_data_dir, folio_name, modalities, 0)
-        for class_name,label in classes_dict.items():
-            xs, ys = read_x_y_coords(msi_obj.folio_dir, msi_obj.folio_name, class_name, box)
-            coords = zip(xs, ys)
-            for coord in coords:
-                patch_specs.append((os.path.join(main_data_dir,png_folder,folio_name,folio_name),coord,label))
-    print(f"Total patches: {len(patch_specs)}")
-    total_points = len(patch_specs)
-    indexes = np.arange(total_points)
-    np.random.shuffle(indexes)
-    patch_specs = [patch_specs[i] for i in indexes]
-    band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
-    dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, 0, batch_size, shuffle, buffer_size)
+        for class_name, label in classes_dict.items():
+            tfrecord_files.append(
+                os.path.join(main_data_dir, folio_name, f"{class_name}_{window_size}.tfrecords"))
+
+
+    # Shuffle the list of files
+    tfrecord_files = tf.random.shuffle(tf.convert_to_tensor(tfrecord_files))
+
+    # Use interleave to read multiple files concurrently for better performance
+    dataset = tf.data.Dataset.from_tensor_slices(tfrecord_files)
+    dataset = dataset.interleave(
+        lambda file: tf.data.TFRecordDataset(file).map(parse_tfrecord_fn, num_parallel_calls=tf.data.AUTOTUNE),
+        cycle_length=tf.data.AUTOTUNE,  # Number of files to read in parallel
+        block_length=1,  # How many records from each file should we read at a time
+        num_parallel_calls=tf.data.AUTOTUNE  # Processing in parallel
+    )
+
+    # Shuffle, batch, and prefetch for performance
+    dataset = dataset.shuffle(buffer_size=1000)  # Adjust buffer_size based on data size
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(tf.data.AUTOTUNE)
     return dataset
 
-def test_build_patch_dataset_with_labels(root_dir,palimpsest_name,main_data_dir,folio_names,modalities,):
-    coords = [(100, 150), (200, 180), (50, 75)]
-    labels = [1, 0, 1]
-    patch_specs = []
-    for i, folio_name in enumerate(folio_names):
-        folio_dir = os.path.join(root_dir, palimpsest_name, "png_images_standardized", folio_name, folio_name)
-        patch_specs.append((folio_dir, coords[i], labels[i]))
-    band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
 
-    window_size = 33  # For example, a 33x33 patch.
-    rotate_angle = 0  # Rotation in degrees.
-    padding_fill = 0
-    batch_size = 32
-
-    dataset = build_patch_dataset_with_labels(patch_specs, window_size, band_list, rotate_angle, padding_fill,
-                                              batch_size)
 
 
 
 if __name__ == "__main__":
-    root_dir = r"D:"
-    palimpsest_name = "Verona_msXL"
-    main_data_dir = os.path.join(root_dir,palimpsest_name)
-    folio_names = ["msXL_335v_b", "msXL_335v_b","msXL_319v_b"]
+
+    main_data_dir = r"D:\Verona_msXL"
+    folio_names = [r"msXL_335v_b",] #"msXL_319v_b"]
     modalities = ["M"]
     class_dict = {"undertext":1,"not_undertext":0}
-    path_to_profiler = r"c:\Data\PhD\ML_palimpsests\Supervised_palimpsest\New folder"
+    window_size = 11
 
-    dataset = dataset_tf(main_data_dir,folio_names,class_dict,modalities,window_size=33,rotate_angle=0,batch_size=32,shuffle=True,buffer_size=10000)
+    dataset = dataset_tf(main_data_dir,folio_names,window_size,class_dict, 32)
 
     # Iterate over one batch.
     for patches, labels in dataset.take(1):
         print("Batch patches shape:", patches.shape)
         print("Batch labels:", labels.numpy())
-    plt.figure()
-    plt.imshow(patches[0, :, :, 0])
-    plt.show()
+        for i in range(patches.shape[0]):
+            print(f"Patch {i} shape:", patches[i].shape)
+            print(f"Label {i}:", labels[i].numpy())
+            # Visualize the first channel of the first patch
+            plt.figure()
+            plt.imshow(patches[i, :, :, 0], cmap='gray')
+            plt.title(f"Patch {i} - Label: {labels[i].numpy()}")
+plt.show()
 
 
 

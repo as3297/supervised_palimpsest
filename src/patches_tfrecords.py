@@ -66,6 +66,7 @@ def create_tf_example(patch_tensor, label, palimpsest_name, folio_name,coords,ba
     Returns:
         A tf.train.Example proto.
     """
+    patch_shape = list(patch_tensor.shape)
     #serealize spectralon mean
     spectralon_mean = tf.io.serialize_tensor(spectralon_mean)
 
@@ -82,7 +83,7 @@ def create_tf_example(patch_tensor, label, palimpsest_name, folio_name,coords,ba
         'coords': _int64_feature([coords[0], coords[1]]), # Store the coordinates as a list,
         'patch_raw': _bytes_feature(patch_bytes), # Store the serialized tensor bytes
         'label': _int64_feature(label), # Store the integer label
-        'patch_shape': _int64_feature(patch_tensor.shape), # Store the shape of the patch
+        'patch_shape': _int64_feature(patch_shape), # Store the shape of the patch
         'spectralon_mean': _bytes_feature(spectralon_mean), # Store the spectralon mean
     }
 
@@ -120,29 +121,30 @@ def create_tfrecords(base_data_dir,folio_names,window_size, classes_dict,modalit
             # Iterate through patch specifications with a progress bar
             palimpsest_name = os.path.basename(base_data_dir)
             xs,ys = read_x_y_coords(base_data_dir, folio_name, class_name, BOX)
-            pil_msi_obj = ImageCubePILobject(base_data_dir, folio_name, band_list, 0)
+
             coords = list(zip(xs, ys))
-            bands = pil_msi_obj.band_list
-            output_tfrecord_path = os.path.join(base_data_dir, folio_name, f"{class_name}_{window_size}.tfrecord")
+            output_tfrecord_path = os.path.join(base_data_dir, folio_name, f"{class_name}_{window_size}.tfrecords")
             print(f"Starting TFRecord creation: {output_tfrecord_path}")
 
             #try:
             with tf.io.TFRecordWriter(output_tfrecord_path) as writer:
                 for coords_idx in tqdm(range(0,len(coords),chunk_size), desc=f"Processing Coordinates of {folio_name} class {class_name}"):
                     coords_chunk = coords[coords_idx:coords_idx+chunk_size]
-                    patchs = PatchesfromMSI_PIL(pil_msi_obj,coords_chunk,window_size).unstretch_ims_imgs
-                    spectralon_mean = PatchesfromMSI_PIL.max_vals
-
+                    pil_msi_obj = ImageCubePILobject(base_data_dir, folio_name, band_list, 0)
+                    patchs_obj = PatchesfromMSI_PIL(pil_msi_obj,coords_chunk,window_size)
+                    patchs = patchs_obj.unstretch_ims_imgs
+                    # reshape patches to (BATCH,H, W, BANDS)
+                    patchs = patchs.transpose(1,2,3,0)
+                    spectralon_mean = patchs_obj.max_vals
                     patch_specs = zip(patchs, coords_chunk)
 
                     for patch, coord in patch_specs:
                         # Create the tf.train.Example proto containing the patch and label
-                        tf_example = create_tf_example(patch, label, palimpsest_name, folio_name,coord,bands,spectralon_mean)
+                        tf_example = create_tf_example(patch, label, palimpsest_name, folio_name,coord,band_list,spectralon_mean)
 
                         # Write the serialized proto to the TFRecord file
                         writer.write(tf_example.SerializeToString())
                         count += 1
-                        break
             #except Exception as e:
             #    print(f"\nFATAL ERROR during TFRecord writing: {e}")
             #    # Handle fatal errors, maybe clean up partial file if necessary
@@ -158,7 +160,7 @@ def create_tfrecords(base_data_dir,folio_names,window_size, classes_dict,modalit
 
 
 if __name__ == "__main__":
-    main_data_dir = "D:\Verona_msXL"
+    main_data_dir = "/projects/palimpsests/Verona_msXL"
     modality = "M"
     folio_names = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
                    "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
