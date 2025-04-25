@@ -112,7 +112,7 @@ def create_tfrecords(base_data_dir,folio_names,window_size, classes_dict,modalit
     count = 0
     skipped_count = 0
     BOX = None
-    chunk_size = 1000
+    chunk_size = 10000
     # Use tf.io.TFRecordWriter within a 'with' statement for safe file handling
     band_list = read_band_list(os.path.join(main_data_dir, "band_list.txt"), modalities)
 
@@ -129,7 +129,7 @@ def create_tfrecords(base_data_dir,folio_names,window_size, classes_dict,modalit
             #try:
             with tf.io.TFRecordWriter(output_tfrecord_path) as writer:
                 for coords_idx in tqdm(range(0,len(coords),chunk_size), desc=f"Processing Coordinates of {folio_name} class {class_name}"):
-                    coords_chunk = coords[coords_idx:coords_idx+chunk_size]
+                    coords_chunk = coords[coords_idx:min(coords_idx+chunk_size,len(coords))]
                     pil_msi_obj = ImageCubePILobject(base_data_dir, folio_name, band_list, 0)
                     patchs_obj = PatchesfromMSI_PIL(pil_msi_obj,coords_chunk,window_size)
                     patchs = patchs_obj.unstretch_ims_imgs
