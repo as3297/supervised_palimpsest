@@ -7,13 +7,13 @@ from src.msi_data_as_array import FragmentfromMSI_PIL,NormalizingGray
 # Display spectralon target for every band
 # Load non-undertext and undertext masks
 main_dir = r"d:\Verona_msXL"
-folio_names = ["msXL_315r_b",
-"msXL_315v_b",
+folio_names = ["msXL_315r_b",]
+"""["msXL_315v_b",
 "msXL_318r_b",
 "msXL_318v_b",
 "msXL_319r_b","msXL_319v_b","msXL_322r_b","msXL_322v_b",
 "msXL_323r_b","msXL_323v_b","msXL_334r_b","msXL_334v_b",
-"msXL_335r_b","msXL_335v_b","msXL_344r_b","msXL_344v_b"]
+"msXL_335r_b","msXL_335v_b","msXL_344r_b","msXL_344v_b"]"""
 modality = "M"
 for folio_name in folio_names:
     print(folio_name)

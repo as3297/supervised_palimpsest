@@ -1,6 +1,4 @@
 import copy
-
-from src.miscellaneous.tiff_to_png import band_list
 from src.msi_data_as_array import FullImageFromPILImageCube,PatchesfromMSI_PIL,FragmentfromMSI_PIL
 import numpy as np
 from matplotlib import pyplot as plt
