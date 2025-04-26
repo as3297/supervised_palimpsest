@@ -162,9 +162,10 @@ def create_tfrecords(base_data_dir,folio_names,window_size, classes_dict,modalit
 if __name__ == "__main__":
     main_data_dir = "/projects/palimpsests/Verona_msXL"
     modality = "M"
-    folio_names = ["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
-                   "msXL_322r_b", "msXL_322v_b", "msXL_323r_b", "msXL_334r_b",
+    folio_names = ["msXL_323r_b", "msXL_334r_b",
                    "msXL_334v_b", "msXL_344r_b", "msXL_344v_b", r"msXL_315r_b"]
+    #["msXL_335v_b", r"msXL_315v_b", "msXL_318r_b", "msXL_318v_b", "msXL_319r_b", "msXL_319v_b",
+    #"msXL_322r_b", "msXL_322v_b",]
     classes_dict = {"undertext": 1, "not_undertext": 0}
     window_size = 11
 
